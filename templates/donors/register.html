@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}{% if editing %}Edit{% else %}Complete{% endif %} Donor Profile – Blood Bank{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <h1>
+    {% if editing %}
+      <i class="fas fa-edit"></i>
+      Edit Donor Profile
+    {% else %}
+      <i class="fas fa-user-plus"></i>
+      Complete Donor Profile
+    {% endif %}
+  </h1>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>
+      <i class="fas fa-hand-holding-heart"></i>
+      Donor Information
+    </h3>
+  </div>
+  <div class="card-body">
+    <form method="post" aria-label="Donor profile form">
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="form-group">
+          <label for="{{ field.id_for_label }}">
+            {% if 'name' in field.name %}
+              <i class="fas fa-user"></i>
+            {% elif 'blood' in field.name %}
+              <i class="fas fa-tint"></i>
+            {% elif 'dob' in field.name or 'date' in field.name %}
+              <i class="fas fa-calendar"></i>
+            {% elif 'gender' in field.name %}
+              <i class="fas fa-venus-mars"></i>
+            {% elif 'phone' in field.name %}
+              <i class="fas fa-phone"></i>
+            {% elif 'address' in field.name or 'city' in field.name %}
+              <i class="fas fa-map-marker-alt"></i>
+            {% elif 'weight' in field.name %}
+              <i class="fas fa-weight"></i>
+            {% elif 'medical' in field.name or 'health' in field.name %}
+              <i class="fas fa-heartbeat"></i>
+            {% else %}
+              <i class="fas fa-info-circle"></i>
+            {% endif %}
+            {{ field.label }}
+          </label>
+          {{ field }}
+          {% if field.errors %}
+            <ul class="errorlist" role="alert">
+              {% for error in field.errors %}
+                <li>
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          {% if field.help_text %}
+            <small class="helptext">
+              <i class="fas fa-info-circle"></i>
+              {{ field.help_text }}
+            </small>
+          {% endif %}
+        </div>
+      {% endfor %}
+      <div class="btn-group mt-3">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i>
+          Save Profile
+        </button>
+        <a href="{% url 'users:dashboard' %}" class="btn btn-outline">
+          <i class="fas fa-times"></i>
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

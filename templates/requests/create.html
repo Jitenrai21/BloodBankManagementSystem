@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}New Blood Request – Blood Bank{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <h1>&#x2795; New Blood Request</h1>
+</div>
+
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+          {% for error in field.errors %}
+            <p class="error">{{ error }}</p>
+          {% endfor %}
+        {% endif %}
+      </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Submit Request</button>
+    <a href="{% url 'requests:list' %}" class="btn btn-outline">Cancel</a>
+  </form>
+</div>
+{% endblock %}

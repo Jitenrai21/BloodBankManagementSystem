@@ -1,0 +1,774 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard – Blood Bank{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Admin Dashboard Overrides ─────────────────────────────────────── */
+
+/* Stats grid: 6 equal columns, no overflow */
+.stats-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.stat-card .stat-label {
+  font-size: 0.72rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: .3px;
+}
+.stat-card .stat-icon {
+  font-size: 1.4rem;
+  margin-bottom: 0.4rem;
+  opacity: 0.65;
+}
+
+/* Quick-action grid */
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  gap: 0.6rem;
+  padding: 1rem;
+}
+.quick-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--grey-200);
+  background: var(--bg-light);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.18s, color 0.18s, border-color 0.18s, box-shadow 0.18s, transform 0.15s;
+  cursor: pointer;
+}
+.quick-action-btn:hover {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(211,47,47,0.28);
+  text-decoration: none;
+}
+.quick-action-btn i { width: 1rem; text-align: center; }
+.quick-action-btn.btn-primary-action {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red);
+}
+.quick-action-btn.btn-primary-action:hover {
+  background: #b71c1c;
+  border-color: #b71c1c;
+  box-shadow: 0 4px 14px rgba(183,28,28,0.35);
+}
+
+/* Content grid – equal-height cards */
+.main-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  align-items: stretch;
+  margin-bottom: 1.5rem;
+}
+.main-cards-grid > .card {
+  display: flex;
+  flex-direction: column;
+  min-height: 380px;
+  margin-bottom: 0;
+}
+/* Flexible body – stretches to fill available card height */
+.card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.card-content > .table-wrapper {
+  flex: 1;
+  min-height: 0;
+}
+/* Sticky footer inside each card */
+.card-actions {
+  margin-top: auto;
+  padding: 0.8rem 1rem;
+  border-top: 1px solid var(--grey-200);
+  background: var(--bg-light);
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+/* Uniform summary strip (numbers row at top of a card) */
+.card-summary {
+  display: flex;
+  justify-content: space-around;
+  padding: 0.9rem 1rem;
+  background: var(--bg-light);
+  border-bottom: 1px solid var(--grey-100);
+  flex-shrink: 0;
+}
+.card-summary-item { text-align: center; }
+.card-summary-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+.card-summary-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 0.15rem;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+/* Four-cell mini-stat grid inside a card */
+.card-mini-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  padding: 0.8rem 1rem;
+  flex-shrink: 0;
+}
+.card-mini-stats .stat-card {
+  padding: 0.65rem 0.4rem;
+  min-width: 0;
+}
+.card-mini-stats .stat-card .stat-value { font-size: 1.4rem; }
+.card-mini-stats .stat-card .stat-label { font-size: 0.68rem; }
+/* Three-cell mini-stat grid */
+.card-mini-stats-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  padding: 0.8rem 1rem;
+  flex-shrink: 0;
+}
+.card-mini-stats-3 .stat-card {
+  padding: 0.65rem 0.4rem;
+  min-width: 0;
+}
+.card-mini-stats-3 .stat-card .stat-value { font-size: 1.4rem; }
+.card-mini-stats-3 .stat-card .stat-label { font-size: 0.68rem; }
+/* Empty-state inside a card stretches to fill */
+.card-content > .empty-state, .empty-state-fill {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+@media (max-width: 900px) {
+  .main-cards-grid { grid-template-columns: 1fr; }
+  .card-mini-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Urgent / critical alert banner */
+.admin-alert-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.9rem 1.25rem;
+  border-radius: var(--radius-lg);
+  border-left: 5px solid var(--warning);
+  background: linear-gradient(135deg, #fff8e1 0%, #fff3e0 100%);
+  box-shadow: 0 2px 8px rgba(255,152,0,0.15);
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+.admin-alert-banner.critical {
+  border-left-color: var(--red);
+  background: linear-gradient(135deg, #fff5f5 0%, #ffebee 100%);
+  box-shadow: 0 2px 8px rgba(211,47,47,0.15);
+}
+.admin-alert-banner .ab-icon { font-size: 1.75rem; line-height: 1; padding-top: 0.1rem; }
+.admin-alert-banner .ab-icon.urgent  { color: var(--warning); }
+.admin-alert-banner .ab-icon.critical{ color: var(--red); }
+.admin-alert-banner .ab-body  { flex: 1; min-width: 200px; }
+.admin-alert-banner .ab-title { font-weight: 700; font-size: 1rem; margin-bottom: 0.3rem; }
+.admin-alert-banner .ab-title.urgent  { color: #e65100; }
+.admin-alert-banner .ab-title.critical{ color: var(--red); }
+.admin-alert-banner .ab-meta  { font-size: 0.85rem; color: var(--text-secondary); display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+.admin-alert-banner .ab-action{ align-self: center; }
+
+/* Expired blood info box (inside Inventory card) */
+.expired-info-box {
+  background: #fff5f5;
+  border: 1px solid #ffcdd2;
+  border-left: 4px solid var(--red);
+  border-radius: var(--radius);
+  padding: 0.65rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  flex-wrap: wrap;
+  margin: 0 1rem 0.25rem;
+}
+.expired-info-box > i { color: var(--red); font-size: 1.05rem; flex-shrink: 0; }
+.expired-info-box > div { flex: 1; min-width: 0; }
+.expired-info-box strong { color: var(--red); }
+
+@keyframes pulse-badge {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.65; }
+}
+.badge-pulse { animation: pulse-badge 1.6s ease-in-out infinite; }
+
+@media (max-width: 992px) {
+  .stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .quick-actions-grid { grid-template-columns: repeat(2, 1fr); }
+  .stat-card .stat-label { font-size: 0.65rem; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h2><i class="fas fa-shield-alt"></i> Admin Dashboard</h2>
+  <!-- ── Urgent / Critical Request Alert ────────────────────── -->
+  {% if urgent_critical_count > 0 %}
+  <div class="admin-alert-banner {% if urgent_critical_has_critical %}critical{% endif %}">
+    <div class="ab-icon {% if urgent_critical_has_critical %}critical{% else %}urgent{% endif %}">
+      <i class="fas {% if urgent_critical_has_critical %}fa-exclamation-circle{% else %}fa-exclamation-triangle{% endif %}"></i>
+    </div>
+    <div class="ab-body">
+      <div class="ab-title {% if urgent_critical_has_critical %}critical{% else %}urgent{% endif %}">
+        {% if urgent_critical_has_critical %}Critical Blood Request Alert{% else %}Urgent Blood Request Alert{% endif %}
+      </div>
+      <div class="ab-meta">
+        <span>
+          <i class="fas fa-tint"></i>
+          <strong>{{ urgent_critical_count }}</strong>
+          pending request{{ urgent_critical_count|pluralize }} require{{ urgent_critical_count|pluralize:",s" }} immediate attention
+        </span>
+        {% for req in urgent_critical_requests %}
+          <span class="badge {% if req.urgency == 'critical' %}badge-danger{% else %}badge-warning{% endif %}">
+            <i class="fas fa-tint"></i> {{ req.blood_group }}&nbsp;&middot;&nbsp;{{ req.hospital.name|truncatewords:2 }}
+          </span>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="ab-action">
+      <a href="{% url 'requests:list' %}?status=pending" class="btn btn-sm {% if urgent_critical_has_critical %}btn-danger{% else %}btn-warning{% endif %}">
+        <i class="fas fa-arrow-right"></i> Review Now
+      </a>
+    </div>
+  </div>
+  {% endif %}
+  <!-- ── Top Stats Cards ───────────────────────────────── -->
+  <div class="stats-grid mb-3">
+    <div class="stat-card">
+      <div class="stat-icon"><i class="fas fa-users"></i></div>
+      <div class="stat-value">{{ total_users }}</div>
+      <div class="stat-label">Total Users</div>
+    </div>
+    <div class="stat-card {% if pending_hospitals > 0 %}stat-danger{% endif %}">
+      <div class="stat-icon"><i class="fas fa-hospital"></i></div>
+      <div class="stat-value">{{ pending_hospitals }}</div>
+      <div class="stat-label">Hospitals Pending</div>
+    </div>
+    <div class="stat-card stat-info">
+      <div class="stat-icon"><i class="fas fa-box"></i></div>
+      <div class="stat-value">{{ total_inventory }}</div>
+      <div class="stat-label">Inventory Units</div>
+    </div>
+    <div class="stat-card {% if pending_requests > 0 %}stat-warning{% endif %}">
+      <div class="stat-icon"><i class="fas fa-clipboard-list"></i></div>
+      <div class="stat-value">{{ pending_requests }}</div>
+      <div class="stat-label">Pending Requests</div>
+    </div>
+    <div class="stat-card {% if active_fraud_flags > 0 %}stat-danger{% endif %}">
+      <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+      <div class="stat-value">{{ active_fraud_flags }}</div>
+      <div class="stat-label">Active Fraud Flags</div>
+    </div>
+    <div class="stat-card {% if expiring_soon > 0 %}stat-warning{% endif %}">
+      <div class="stat-icon"><i class="fas fa-clock"></i></div>
+      <div class="stat-value">{{ expiring_soon }}</div>
+      <div class="stat-label">Expiring ≤7 Days</div>
+    </div>
+  </div>
+
+  <!-- ── Quick Actions ──────────────────────────────────── -->
+  <div class="card mb-3">
+    <div class="card-header">
+      <i class="fas fa-bolt"></i> Quick Actions
+    </div>
+    <div class="quick-actions-grid">
+      <a href="{% url 'users:manage_users' %}" class="quick-action-btn" data-tooltip="Manage all users">
+        <i class="fas fa-users-cog"></i> Manage Users
+      </a>
+      <a href="{% url 'hospitals:list' %}" class="quick-action-btn" data-tooltip="View hospitals">
+        <i class="fas fa-hospital"></i> Hospitals
+      </a>
+      <a href="{% url 'inventory:list' %}" class="quick-action-btn" data-tooltip="Blood inventory">
+        <i class="fas fa-box"></i> Inventory
+      </a>
+      <a href="{% url 'requests:list' %}" class="quick-action-btn" data-tooltip="Blood requests">
+        <i class="fas fa-clipboard-list"></i> Blood Requests
+      </a>
+      <a href="{% url 'donations:slot_list' %}" class="quick-action-btn" data-tooltip="Donation slots">
+        <i class="fas fa-calendar-alt"></i> Donation Slots
+      </a>
+      <a href="{% url 'donations:history' %}" class="quick-action-btn" data-tooltip="Donation history">
+        <i class="fas fa-history"></i> Donation History
+      </a>
+      <a href="{% url 'fraud:list' %}" class="quick-action-btn" data-tooltip="Fraud alerts">
+        <i class="fas fa-exclamation-triangle"></i> Fraud Alerts
+      </a>
+      <a href="{% url 'audit:list' %}" class="quick-action-btn" data-tooltip="Audit log">
+        <i class="fas fa-clipboard-check"></i> Audit Log
+      </a>
+      <a href="/admin/" class="quick-action-btn btn-primary-action" target="_blank" data-tooltip="Django admin panel">
+        <i class="fas fa-tools"></i> Django Admin
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Main Content Grid ──────────────────────────────── -->
+  <div class="main-cards-grid">
+
+    <!-- Pending Hospital Approvals -->
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-hospital"></i> Pending Hospital Approvals
+        <a href="{% url 'hospitals:list' %}?verified=0" class="btn btn-sm btn-outline" style="margin-left:auto;">View All</a>
+      </div>
+      <div class="card-content">
+        {% if pending_hospitals_qs %}
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th><i class="fas fa-hospital"></i> Hospital</th>
+                  <th><i class="fas fa-map-marker-alt"></i> City</th>
+                  <th><i class="fas fa-barcode"></i> Reg #</th>
+                  <th><i class="fas fa-cog"></i> Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for h in pending_hospitals_qs %}
+                <tr>
+                  <td>{{ h.name }}</td>
+                  <td>{{ h.city }}</td>
+                  <td><code>{{ h.registration_number }}</code></td>
+                  <td>
+                    <div class="btn-group">
+                      <a href="{% url 'hospitals:verify' h.pk %}" class="btn btn-sm btn-success" data-tooltip="Verify hospital">
+                        <i class="fas fa-check-circle"></i> Verify
+                      </a>
+                      <a href="{% url 'users:approve_user' h.user.pk %}" class="btn btn-sm btn-primary" data-tooltip="Approve user account">
+                        <i class="fas fa-user-check"></i> Approve
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state empty-state-fill">
+            <i class="fas fa-check-circle"></i>
+            <p>All hospitals are approved!</p>
+          </div>
+        {% endif %}
+      </div>
+      <div class="card-actions">
+        <small class="text-muted"><i class="fas fa-info-circle"></i> {{ pending_hospitals }} hospital{{ pending_hospitals|pluralize }} awaiting approval</small>
+      </div>
+    </div>
+
+    <!-- Users Overview -->
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-users"></i> Users Overview
+      </div>
+      <div class="card-mini-stats-3">
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-user-shield"></i></div>
+          <div class="stat-value">{{ admins_count }}</div>
+          <div class="stat-label">Admins</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-hand-holding-heart"></i></div>
+          <div class="stat-value">{{ donors_count }}</div>
+          <div class="stat-label">Donors</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-hospital-user"></i></div>
+          <div class="stat-value">{{ hospitals_count }}</div>
+          <div class="stat-label">Hospitals</div>
+        </div>
+      </div>
+      <div class="card-content" style="padding:1rem;">
+        <p class="text-muted mb-2">
+          <i class="fas fa-clock"></i> <strong>{{ pending_approvals }}</strong>
+          user{{ pending_approvals|pluralize }} pending approval
+        </p>
+      </div>
+      <div class="card-actions">
+        <a href="{% url 'users:manage_users' %}" class="btn btn-primary btn-sm">
+          <i class="fas fa-users-cog"></i> Manage All Users
+        </a>
+        <a href="{% url 'users:manage_users' %}?approved=0" class="btn btn-outline btn-sm" style="margin-left:auto;">
+          <i class="fas fa-clock"></i> Pending
+        </a>
+      </div>
+    </div>
+
+    <!-- Blood Inventory -->
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-box"></i> Blood Inventory
+      </div>
+      <div class="card-summary">
+        <div class="card-summary-item">
+          <div class="card-summary-value" style="color:var(--red);">{{ total_inventory }}</div>
+          <div class="card-summary-label">Total Units</div>
+        </div>
+        <div class="card-summary-item">
+          <div class="card-summary-value" style="color:var(--warning);">{{ expiring_soon }}</div>
+          <div class="card-summary-label">Expiring &le;7d</div>
+        </div>
+        <div class="card-summary-item">
+          <div class="card-summary-value" style="color:{% if expired_count > 0 %}var(--red){% else %}var(--text-secondary){% endif %};">{{ expired_count }}</div>
+          <div class="card-summary-label">Expired</div>
+        </div>
+      </div>
+      <div class="card-content">
+        {% if inventory_by_group %}
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th><i class="fas fa-tint"></i> Blood Group</th>
+                  <th><i class="fas fa-box"></i> Available Units</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in inventory_by_group %}
+                <tr>
+                  <td><span class="badge badge-danger"><i class="fas fa-tint"></i> {{ item.blood_group }}</span></td>
+                  <td><strong>{{ item.total }}</strong></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state empty-state-fill">
+            <i class="fas fa-box-open"></i>
+            <p>No inventory records.</p>
+          </div>
+        {% endif %}
+        {% if expired_count > 0 %}
+        <div class="expired-info-box">
+          <i class="fas fa-ban"></i>
+          <div>
+            <strong>{{ expired_count }} expired unit{{ expired_count|pluralize }}</strong> still marked available &mdash;
+            {% for item in expired_inventory_qs %}
+              <span class="badge badge-danger" style="margin:1px 2px;">{{ item.blood_group }}: {{ item.expired_units }}u</span>
+            {% endfor %}
+          </div>
+          <a href="{% url 'inventory:list' %}" class="btn btn-sm btn-danger" style="margin-left:auto;white-space:nowrap;flex-shrink:0;">
+            <i class="fas fa-trash-alt"></i> Manage
+          </a>
+        </div>
+        {% endif %}
+      </div>
+      <div class="card-actions">
+        <a href="{% url 'inventory:list' %}" class="btn btn-primary btn-sm">
+          <i class="fas fa-plus-circle"></i> Add Stock
+        </a>
+        <a href="{% url 'inventory:list' %}?expiring=1" class="btn btn-warning btn-sm">
+          <i class="fas fa-exclamation-triangle"></i> Expiry Alerts
+        </a>
+      </div>
+    </div>
+
+    <!-- Blood Requests -->
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-clipboard-list"></i> Blood Requests
+        {% if urgent_critical_count > 0 %}
+          <span class="badge {% if urgent_critical_has_critical %}badge-danger{% else %}badge-warning{% endif %} badge-pulse" style="margin-left:auto;">
+            <i class="fas {% if urgent_critical_has_critical %}fa-exclamation-circle{% else %}fa-exclamation-triangle{% endif %}"></i>
+            {{ urgent_critical_count }} Urgent
+          </span>
+        {% endif %}
+      </div>
+      <div class="card-mini-stats">
+        <div class="stat-card stat-warning">
+          <div class="stat-value">{{ pending_requests }}</div>
+          <div class="stat-label">Pending</div>
+        </div>
+        <div class="stat-card stat-success">
+          <div class="stat-value">{{ approved_requests }}</div>
+          <div class="stat-label">Approved</div>
+        </div>
+        <div class="stat-card stat-info">
+          <div class="stat-value">{{ fulfilled_requests }}</div>
+          <div class="stat-label">Fulfilled</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ rejected_requests }}</div>
+          <div class="stat-label">Rejected</div>
+        </div>
+      </div>
+      <div class="card-content">
+        {% if recent_requests %}
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th><i class="fas fa-hospital"></i> Hospital</th>
+                  <th><i class="fas fa-tint"></i> Group</th>
+                  <th><i class="fas fa-exclamation-circle"></i> Urgency</th>
+                  <th><i class="fas fa-tasks"></i> Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for req in recent_requests|slice:":8" %}
+                <tr {% if req.urgency == 'critical' %}style="background:#fff5f5;"{% elif req.urgency == 'urgent' %}style="background:#fff8e1;"{% endif %}>
+                  <td>{{ req.hospital.name|truncatewords:3 }}</td>
+                  <td><span class="badge badge-danger"><i class="fas fa-tint"></i> {{ req.blood_group }}</span></td>
+                  <td>
+                    {% if req.urgency == 'critical' %}
+                      <span class="badge badge-danger"><i class="fas fa-exclamation-circle"></i> Critical</span>
+                    {% elif req.urgency == 'urgent' %}
+                      <span class="badge badge-warning"><i class="fas fa-exclamation-triangle"></i> Urgent</span>
+                    {% else %}
+                      <span class="badge badge-info"><i class="fas fa-info-circle"></i> Normal</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if req.status == 'pending' %}
+                      <span class="badge badge-warning"><i class="fas fa-clock"></i> Pending</span>
+                    {% elif req.status == 'approved' %}
+                      <span class="badge badge-success"><i class="fas fa-check"></i> Approved</span>
+                    {% elif req.status == 'fulfilled' %}
+                      <span class="badge badge-success"><i class="fas fa-check-double"></i> Fulfilled</span>
+                    {% elif req.status == 'rejected' %}
+                      <span class="badge badge-danger"><i class="fas fa-times"></i> Rejected</span>
+                    {% else %}
+                      <span class="badge"><i class="fas fa-ban"></i> Cancelled</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state empty-state-fill">
+            <i class="fas fa-clipboard"></i>
+            <p>No recent requests.</p>
+          </div>
+        {% endif %}
+      </div>
+      <div class="card-actions">
+        <a href="{% url 'requests:list' %}" class="btn btn-primary btn-sm">
+          <i class="fas fa-list"></i> View All Requests
+        </a>
+        {% if urgent_critical_count > 0 %}
+        <a href="{% url 'requests:list' %}?status=pending" class="btn btn-sm {% if urgent_critical_has_critical %}btn-danger{% else %}btn-warning{% endif %}" style="margin-left:auto;">
+          <i class="fas fa-arrow-right"></i> Review Urgent
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Donation Slots -->
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-calendar-alt"></i> Donation Slots
+      </div>
+      <div class="card-summary">
+        <div class="card-summary-item">
+          <div class="card-summary-value" style="color:var(--primary);">{{ total_slots }}</div>
+          <div class="card-summary-label">Total</div>
+        </div>
+        <div class="card-summary-item">
+          <div class="card-summary-value" style="color:var(--warning);">{{ pending_slots }}</div>
+          <div class="card-summary-label">Pending</div>
+        </div>
+        <div class="card-summary-item">
+          <div class="card-summary-value" style="color:var(--success);">{{ approved_slots }}</div>
+          <div class="card-summary-label">Approved</div>
+        </div>
+      </div>
+      <div class="card-content">
+        {% if upcoming_slots %}
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th><i class="fas fa-calendar"></i> Date</th>
+                  <th><i class="fas fa-clock"></i> Time</th>
+                  <th><i class="fas fa-map-marker-alt"></i> Location</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for slot in upcoming_slots|slice:":5" %}
+                <tr>
+                  <td>{{ slot.date|date:"M d, Y" }}</td>
+                  <td>{{ slot.time_slot }}</td>
+                  <td>{{ slot.location|truncatewords:3 }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state empty-state-fill">
+            <i class="fas fa-calendar-times"></i>
+            <p>No upcoming donation slots.</p>
+          </div>
+        {% endif %}
+      </div>
+      <div class="card-actions">
+        <a href="{% url 'donations:slot_list' %}" class="btn btn-primary btn-sm">
+          <i class="fas fa-calendar-check"></i> Manage Slots
+        </a>
+        <a href="{% url 'donations:history' %}" class="btn btn-outline btn-sm">
+          <i class="fas fa-history"></i> History
+        </a>
+      </div>
+    </div>
+
+    <!-- Fraud Alerts -->
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-exclamation-triangle"></i> Fraud Alerts
+      </div>
+      <div class="card-mini-stats-3">
+        <div class="stat-card stat-danger">
+          <div class="stat-value">{{ high_risk_flags }}</div>
+          <div class="stat-label">High Risk</div>
+        </div>
+        <div class="stat-card stat-warning">
+          <div class="stat-value">{{ medium_risk_flags }}</div>
+          <div class="stat-label">Medium Risk</div>
+        </div>
+        <div class="stat-card stat-info">
+          <div class="stat-value">{{ low_risk_flags }}</div>
+          <div class="stat-label">Low Risk</div>
+        </div>
+      </div>
+      <div class="card-content">
+        <div style="padding:1rem;">
+          <p class="text-muted">
+            <i class="fas fa-flag"></i>
+            <strong>{{ active_fraud_flags }}</strong> active flag{{ active_fraud_flags|pluralize }}
+          </p>
+        </div>
+        {% if not active_fraud_flags %}
+          <div class="empty-state empty-state-fill">
+            <i class="fas fa-shield-alt"></i>
+            <p>No active fraud alerts</p>
+          </div>
+        {% endif %}
+      </div>
+      <div class="card-actions">
+        {% if active_fraud_flags > 0 %}
+          <a href="{% url 'fraud:list' %}" class="btn btn-danger btn-sm">
+            <i class="fas fa-exclamation-triangle"></i> Review Alerts
+          </a>
+        {% else %}
+          <a href="{% url 'fraud:list' %}" class="btn btn-outline btn-sm">
+            <i class="fas fa-list"></i> View Fraud Log
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Recent Registrations ───────────────────────────── -->
+  <div class="card">
+    <div class="card-header">
+      <i class="fas fa-user-plus"></i> Recent Registrations
+      <span class="badge badge-info" style="margin-left:auto;">{{ recent_users.count }} new</span>
+    </div>
+    {% if recent_users %}
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th><i class="fas fa-envelope"></i> Email</th>
+              <th><i class="fas fa-phone"></i> Phone</th>
+              <th><i class="fas fa-user-tag"></i> Role</th>
+              <th><i class="fas fa-check-circle"></i> Approved</th>
+              <th><i class="fas fa-toggle-on"></i> Active</th>
+              <th><i class="fas fa-calendar"></i> Joined</th>
+              <th><i class="fas fa-cog"></i> Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in recent_users %}
+            <tr>
+              <td>{{ u.email }}</td>
+              <td>{{ u.phone|default:"—" }}</td>
+              <td>
+                <span class="badge badge-info">
+                  {% if u.role == 'admin' %}
+                    <i class="fas fa-user-shield"></i> Admin
+                  {% elif u.role == 'donor' %}
+                    <i class="fas fa-hand-holding-heart"></i> Donor
+                  {% else %}
+                    <i class="fas fa-hospital"></i> Hospital
+                  {% endif %}
+                </span>
+              </td>
+              <td>
+                {% if u.is_approved %}
+                  <span class="badge badge-success"><i class="fas fa-check"></i> Yes</span>
+                {% else %}
+                  <span class="badge badge-warning"><i class="fas fa-clock"></i> No</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if u.is_active %}
+                  <span class="badge badge-success"><i class="fas fa-check-circle"></i> Yes</span>
+                {% else %}
+                  <span class="badge badge-danger"><i class="fas fa-ban"></i> No</span>
+                {% endif %}
+              </td>
+              <td>{{ u.date_joined|date:"M d, Y" }}</td>
+              <td>
+                <div class="btn-group">
+                  {% if not u.is_approved %}
+                    <a href="{% url 'users:approve_user' u.pk %}" class="btn btn-sm btn-success" data-tooltip="Approve user">
+                      <i class="fas fa-check"></i>
+                    </a>
+                  {% endif %}
+                  {% if u.is_active %}
+                    <a href="{% url 'users:block_user' u.pk %}" class="btn btn-sm btn-danger" data-tooltip="Block user">
+                      <i class="fas fa-ban"></i>
+                    </a>
+                  {% else %}
+                    <a href="{% url 'users:unblock_user' u.pk %}" class="btn btn-sm btn-outline" data-tooltip="Unblock user">
+                      <i class="fas fa-check-circle"></i>
+                    </a>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <i class="fas fa-users-slash"></i>
+        <p>No users found.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

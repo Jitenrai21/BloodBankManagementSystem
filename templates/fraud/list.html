@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Fraud Alerts – Blood Bank{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <h1>&#x1F6A8; Fraud Alerts</h1>
+</div>
+
+<div class="card mb-2">
+  <form method="get" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end;">
+    <div>
+      <label>Severity</label>
+      <select name="severity" class="form-control">
+        <option value="">All</option>
+        <option value="low" {% if severity == 'low' %}selected{% endif %}>Low</option>
+        <option value="medium" {% if severity == 'medium' %}selected{% endif %}>Medium</option>
+        <option value="high" {% if severity == 'high' %}selected{% endif %}>High</option>
+      </select>
+    </div>
+    <div>
+      <label>Resolved</label>
+      <select name="resolved" class="form-control">
+        <option value="">All</option>
+        <option value="0" {% if resolved == '0' %}selected{% endif %}>Unresolved</option>
+        <option value="1" {% if resolved == '1' %}selected{% endif %}>Resolved</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>User</th>
+          <th>Flag Type</th>
+          <th>Severity</th>
+          <th>Score</th>
+          <th>Resolved</th>
+          <th>Created</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in fraud_logs %}
+        <tr>
+          <td>{{ f.pk }}</td>
+          <td>{{ f.user.email|default:"—" }}</td>
+          <td>{{ f.get_flag_type_display }}</td>
+          <td>
+            {% if f.severity == 'high' %}
+              <span class="badge badge-danger">High</span>
+            {% elif f.severity == 'medium' %}
+              <span class="badge badge-warning">Medium</span>
+            {% else %}
+              <span class="badge badge-info">Low</span>
+            {% endif %}
+          </td>
+          <td>{{ f.risk_score }}</td>
+          <td>
+            {% if f.is_resolved %}
+              <span class="badge badge-success">Yes</span>
+            {% else %}
+              <span class="badge badge-danger">No</span>
+            {% endif %}
+          </td>
+          <td>{{ f.created_at|date:"d M Y H:i" }}</td>
+          <td>
+            {% if not f.is_resolved %}
+              <a href="{% url 'fraud:resolve' f.pk %}" class="btn btn-sm btn-primary">Resolve</a>
+            {% else %}
+              <span class="text-muted">{{ f.resolved_by.email|default:"—" }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8">No fraud alerts. &#x2705;</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

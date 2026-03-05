@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Audit Log – Blood Bank{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <h1>&#x1F4DC; Audit Log</h1>
+  <p>Most recent 100 system actions.</p>
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Actor</th>
+          <th>Action</th>
+          <th>Target</th>
+          <th>Details</th>
+          <th>IP</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in logs %}
+        <tr>
+          <td>{{ entry.created_at|date:"d M Y H:i:s" }}</td>
+          <td>{{ entry.actor.email|default:"System" }}</td>
+          <td><span class="badge badge-info">{{ entry.get_action_display }}</span></td>
+          <td>{{ entry.target_type }}{% if entry.target_id %} #{{ entry.target_id }}{% endif %}</td>
+          <td>{{ entry.details|truncatechars:80 }}</td>
+          <td>{{ entry.ip_address|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6">No audit entries yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

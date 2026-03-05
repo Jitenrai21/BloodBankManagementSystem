@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Manage Users – Blood Bank{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <h1>
+    <i class="fas fa-users-cog"></i>
+    Manage Users
+  </h1>
+  <a href="{% url 'users:dashboard' %}" class="btn btn-outline btn-sm">
+    <i class="fas fa-arrow-left"></i>
+    Back to Dashboard
+  </a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h3>
+      <i class="fas fa-filter"></i>
+      Filter Users
+    </h3>
+  </div>
+  <div class="card-body">
+    <form method="get" class="form-row">
+      <div class="form-group">
+        <label for="q">
+          <i class="fas fa-search"></i>
+          Search Email
+        </label>
+        <input type="text" name="q" id="q" value="{{ q|default:'' }}" placeholder="Email address…" style="width:100%;padding:.6rem;border:1.5px solid var(--grey-300);border-radius:var(--radius);">
+      </div>
+      <div class="form-group">
+        <label for="role">
+          <i class="fas fa-user-tag"></i>
+          Role
+        </label>
+        <select name="role" id="role" style="width:100%;padding:.6rem;border:1.5px solid var(--grey-300);border-radius:var(--radius);">
+          <option value="">All Roles</option>
+          <option value="admin"    {% if role == 'admin' %}selected{% endif %}>Admin</option>
+          <option value="donor"    {% if role == 'donor' %}selected{% endif %}>Donor</option>
+          <option value="hospital" {% if role == 'hospital' %}selected{% endif %}>Hospital</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="approved">
+          <i class="fas fa-check-circle"></i>
+          Approval Status
+        </label>
+        <select name="approved" id="approved" style="width:100%;padding:.6rem;border:1.5px solid var(--grey-300);border-radius:var(--radius);">
+          <option value="">All</option>
+          <option value="1" {% if approved == '1' %}selected{% endif %}>Approved</option>
+          <option value="0" {% if approved == '0' %}selected{% endif %}>Pending Approval</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="active">
+          <i class="fas fa-toggle-on"></i>
+          Account Status
+        </label>
+        <select name="active" id="active" style="width:100%;padding:.6rem;border:1.5px solid var(--grey-300);border-radius:var(--radius);">
+          <option value="">All</option>
+          <option value="1" {% if active == '1' %}selected{% endif %}>Active</option>
+          <option value="0" {% if active == '0' %}selected{% endif %}>Blocked</option>
+        </select>
+      </div>
+      <div class="form-group" style="display:flex;align-items:flex-end;gap:.5rem;">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-filter"></i>
+          Apply Filters
+        </button>
+        <a href="{% url 'users:manage_users' %}" class="btn btn-outline">
+          <i class="fas fa-times"></i>
+          Clear
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>
+      <i class="fas fa-list"></i>
+      Users List
+    </h3>
+    <span class="badge badge-info">
+      <i class="fas fa-users"></i>
+      {{ users|length }} user{{ users|length|pluralize }}
+    </span>
+  </div>
+  <div class="card-body">
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Role</th>
+            <th>Approved</th>
+            <th>Active</th>
+            <th>Joined</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td class="text-truncate">{{ u.email }}</td>
+            <td>{{ u.phone|default:"—" }}</td>
+            <td>
+              <span class="badge badge-primary">
+                <i class="fas fa-user"></i>
+                {{ u.role|upper }}
+              </span>
+            </td>
+            <td>
+              {% if u.is_approved %}
+                <span class="badge badge-success">
+                  <i class="fas fa-check"></i>
+                  Approved
+                </span>
+              {% else %}
+                <span class="badge badge-warning">
+                  <i class="fas fa-clock"></i>
+                  Pending
+                </span>
+              {% endif %}
+            </td>
+            <td>
+              {% if u.is_active %}
+                <span class="badge badge-success">
+                  <i class="fas fa-check-circle"></i>
+                  Active
+                </span>
+              {% else %}
+                <span class="badge badge-danger">
+                  <i class="fas fa-ban"></i>
+                  Blocked
+                </span>
+              {% endif %}
+            </td>
+            <td class="text-nowrap">
+              <i class="fas fa-calendar"></i>
+              {{ u.date_joined|date:"d M Y" }}
+            </td>
+            <td>
+              <div class="btn-group">
+                {% if not u.is_approved %}
+                  <a href="{% url 'users:approve_user' u.pk %}" class="btn btn-sm btn-success" data-tooltip="Approve User">
+                    <i class="fas fa-check"></i>
+                    Approve
+                  </a>
+                {% endif %}
+                {% if u.is_active %}
+                  <a href="{% url 'users:block_user' u.pk %}" class="btn btn-sm btn-danger" data-tooltip="Block User">
+                    <i class="fas fa-ban"></i>
+                    Block
+                  </a>
+                {% else %}
+                  <a href="{% url 'users:unblock_user' u.pk %}" class="btn btn-sm btn-outline" data-tooltip="Unblock User">
+                    <i class="fas fa-unlock"></i>
+                    Unblock
+                  </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <i class="fas fa-users-slash"></i>
+                <h3>No users found</h3>
+                <p>No users match your current filters.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

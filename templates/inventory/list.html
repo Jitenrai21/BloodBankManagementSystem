@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Blood Inventory – Blood Bank{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <!-- ── Page Header ── -->
+  <div class="dashboard-header">
+    <h1><i class="fas fa-box-open"></i> Blood Inventory</h1>
+    {% if user.role == 'admin' %}
+      <a href="{% url 'inventory:add' %}" class="btn btn-primary">
+        <i class="fas fa-plus-circle"></i> Add Stock
+      </a>
+    {% endif %}
+  </div>
+
+  <!-- ── Expiry Alert Banner ── -->
+  {% if expiring_count %}
+    <div class="alert alert-warning" role="alert" aria-live="polite">
+      <i class="fas fa-exclamation-triangle"></i>
+      <strong>{{ expiring_count }} item{{ expiring_count|pluralize }}</strong> expiring within 7 days.
+      <a href="{% url 'inventory:alerts' %}" style="font-weight:600;margin-left:.5rem;">
+        View Alerts <i class="fas fa-arrow-right"></i>
+      </a>
+    </div>
+  {% endif %}
+
+  <!-- ── Filter Card ── -->
+  <div class="card mb-3">
+    <form method="get">
+      <div style="display:flex;align-items:center;gap:.75rem;padding:.65rem 1rem;flex-wrap:wrap;">
+
+        <span style="font-size:.78rem;font-weight:700;color:var(--grey-500);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-right:.25rem;">
+          <i class="fas fa-filter" style="color:var(--red);"></i> Filter
+        </span>
+
+        <div style="display:flex;flex-direction:column;gap:.2rem;">
+          <label style="font-size:.72rem;font-weight:600;color:var(--grey-400);text-transform:uppercase;letter-spacing:.04em;">
+            <i class="fas fa-tint" style="color:var(--red);"></i> Group
+          </label>
+          <select name="group" class="form-control" style="padding:.35rem .55rem;font-size:.88rem;height:auto;">
+              <option value="">All Groups</option>
+              <option value="A+"  {% if group == 'A+'  %}selected{% endif %}>A+</option>
+              <option value="A-"  {% if group == 'A-'  %}selected{% endif %}>A-</option>
+              <option value="B+"  {% if group == 'B+'  %}selected{% endif %}>B+</option>
+              <option value="B-"  {% if group == 'B-'  %}selected{% endif %}>B-</option>
+              <option value="AB+" {% if group == 'AB+' %}selected{% endif %}>AB+</option>
+              <option value="AB-" {% if group == 'AB-' %}selected{% endif %}>AB-</option>
+              <option value="O+"  {% if group == 'O+'  %}selected{% endif %}>O+</option>
+              <option value="O-"  {% if group == 'O-'  %}selected{% endif %}>O-</option>
+            </select>
+          </div>
+
+        <div style="display:flex;flex-direction:column;gap:.2rem;">
+          <label style="font-size:.72rem;font-weight:600;color:var(--grey-400);text-transform:uppercase;letter-spacing:.04em;">
+            <i class="fas fa-vial" style="color:#0284c7;"></i> Type
+          </label>
+          <select name="type" class="form-control" style="padding:.35rem .55rem;font-size:.88rem;height:auto;">
+              <option value="">All Types</option>
+              <option value="whole"     {% if type == 'whole'     %}selected{% endif %}>Whole Blood</option>
+              <option value="rbc"       {% if type == 'rbc'       %}selected{% endif %}>RBC</option>
+              <option value="plasma"    {% if type == 'plasma'    %}selected{% endif %}>Plasma</option>
+              <option value="platelets" {% if type == 'platelets' %}selected{% endif %}>Platelets</option>
+            </select>
+          </div>
+
+        <div style="display:flex;flex-direction:column;gap:.2rem;">
+          <label style="font-size:.72rem;font-weight:600;color:var(--grey-400);text-transform:uppercase;letter-spacing:.04em;">
+            <i class="fas fa-check-circle" style="color:#16a34a;"></i> Available
+          </label>
+          <select name="available" class="form-control" style="padding:.35rem .55rem;font-size:.88rem;height:auto;">
+              <option value="">All</option>
+              <option value="1" {% if available == '1' %}selected{% endif %}>Available</option>
+              <option value="0" {% if available == '0' %}selected{% endif %}>Unavailable</option>
+            </select>
+          </div>
+
+        <div style="display:flex;gap:.5rem;align-self:flex-end;">
+          <button type="submit" class="btn btn-primary btn-sm" style="white-space:nowrap;">
+            <i class="fas fa-filter"></i> Apply
+          </button>
+          <a href="{% url 'inventory:list' %}" class="btn btn-outline btn-sm" style="white-space:nowrap;">
+            <i class="fas fa-times"></i> Clear
+          </a>
+        </div>
+
+      </div>
+    </form>
+  </div>
+
+  <!-- ── Inventory Table ── -->
+  <div class="card">
+    <div class="card-header">
+      <i class="fas fa-list"></i> Inventory Records
+      <span class="badge badge-info" style="margin-left:auto;">{{ inventory|length }} item{{ inventory|length|pluralize }}</span>
+      {% if user.role == 'admin' %}
+        <a href="{% url 'inventory:alerts' %}" class="btn btn-warning btn-sm" style="margin-left:.5rem;">
+          <i class="fas fa-bell"></i> Expiry Alerts
+        </a>
+      {% endif %}
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th><i class="fas fa-tint"></i> Blood Group</th>
+            <th><i class="fas fa-vial"></i> Type</th>
+            <th><i class="fas fa-cubes"></i> Units</th>
+            <th><i class="fas fa-calendar-plus"></i> Collected</th>
+            <th><i class="fas fa-calendar-times"></i> Expires</th>
+            <th><i class="fas fa-toggle-on"></i> Available</th>
+            {% if user.role == 'admin' %}<th><i class="fas fa-cog"></i> Action</th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for inv in inventory %}
+          <tr>
+            <td>
+              <span class="badge badge-danger">
+                <i class="fas fa-tint"></i> {{ inv.blood_group }}
+              </span>
+            </td>
+            <td>
+              <span class="badge badge-info">{{ inv.get_blood_type_display }}</span>
+            </td>
+            <td><strong>{{ inv.quantity_units }}</strong> <span class="text-muted" style="font-size:.8rem;">units</span></td>
+            <td>
+              <i class="fas fa-calendar-check" style="color:var(--grey-400);margin-right:.3rem;"></i>
+              {{ inv.collection_date|date:"d M Y" }}
+            </td>
+            <td>
+              {% if inv.is_expired %}
+                <span class="badge badge-danger">
+                  <i class="fas fa-exclamation-circle"></i> {{ inv.expiry_date|date:"d M Y" }} (Expired)
+                </span>
+              {% else %}
+                <i class="fas fa-calendar-times" style="color:var(--grey-400);margin-right:.3rem;"></i>
+                {{ inv.expiry_date|date:"d M Y" }}
+              {% endif %}
+            </td>
+            <td>
+              {% if inv.is_available %}
+                <span class="badge badge-success"><i class="fas fa-check-circle"></i> Available</span>
+              {% else %}
+                <span class="badge badge-danger"><i class="fas fa-times-circle"></i> Unavailable</span>
+              {% endif %}
+            </td>
+            {% if user.role == 'admin' %}
+            <td>
+              <a href="{% url 'inventory:update' inv.pk %}" class="btn btn-sm btn-outline" data-tooltip="Edit record">
+                <i class="fas fa-edit"></i> Edit
+              </a>
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="{% if user.role == 'admin' %}7{% else %}6{% endif %}" style="padding:0;">
+              <div class="empty-state" style="padding:3rem 1rem;">
+                <div style="background:var(--red-light,#fde8e8);border-radius:50%;width:5rem;height:5rem;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;">
+                  <i class="fas fa-box-open" style="font-size:2rem;color:var(--red);"></i>
+                </div>
+                <h3 style="font-size:1.15rem;margin-bottom:.4rem;">No Inventory Records</h3>
+                <p class="text-muted" style="max-width:320px;margin:0 auto 1.5rem;">No blood inventory matches this filter. Try adjusting filters or add new stock.</p>
+                {% if user.role == 'admin' %}
+                  <a href="{% url 'inventory:add' %}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus-circle"></i> Add Stock
+                  </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

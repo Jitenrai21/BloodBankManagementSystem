@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}Blood Requests – Blood Bank{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <h1>
+    <i class="fas fa-clipboard-list"></i>
+    Blood Requests
+  </h1>
+  {% if user.role == 'hospital' %}
+    <a href="{% url 'requests:create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i>
+      New Blood Request
+    </a>
+  {% endif %}
+</div>
+
+<div class="card mb-3">
+  <form method="get">
+    <div style="display:flex;align-items:center;gap:.75rem;padding:.65rem 1rem;flex-wrap:wrap;">
+
+      <span style="font-size:.78rem;font-weight:700;color:var(--grey-500);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-right:.25rem;">
+        <i class="fas fa-filter" style="color:var(--red);"></i> Filter
+      </span>
+
+      <div style="display:flex;flex-direction:column;gap:.2rem;">
+        <label for="status" style="font-size:.72rem;font-weight:600;color:var(--grey-400);text-transform:uppercase;letter-spacing:.04em;">
+          <i class="fas fa-tasks" style="color:#0284c7;"></i> Status
+        </label>
+        <select name="status" id="status" class="form-control" style="padding:.35rem .55rem;font-size:.88rem;height:auto;width:180px;">
+            <option value="">All Statuses</option>
+            <option value="pending"   {% if status_filter == 'pending'   %}selected{% endif %}>Pending</option>
+            <option value="approved"  {% if status_filter == 'approved'  %}selected{% endif %}>Approved</option>
+            <option value="fulfilled" {% if status_filter == 'fulfilled' %}selected{% endif %}>Fulfilled</option>
+            <option value="rejected"  {% if status_filter == 'rejected'  %}selected{% endif %}>Rejected</option>
+            <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+          </select>
+        </div>
+
+      <div style="display:flex;flex-direction:column;gap:.2rem;">
+        <label for="urgency" style="font-size:.72rem;font-weight:600;color:var(--grey-400);text-transform:uppercase;letter-spacing:.04em;">
+          <i class="fas fa-exclamation-circle" style="color:var(--red);"></i> Urgency
+        </label>
+        <select name="urgency" id="urgency" class="form-control" style="padding:.35rem .55rem;font-size:.88rem;height:auto;width:160px;">
+            <option value="">All Urgencies</option>
+            <option value="normal"   {% if urgency_filter == 'normal'   %}selected{% endif %}>Normal</option>
+            <option value="urgent"   {% if urgency_filter == 'urgent'   %}selected{% endif %}>Urgent</option>
+            <option value="critical" {% if urgency_filter == 'critical' %}selected{% endif %}>Critical</option>
+          </select>
+        </div>
+
+      <div style="display:flex;gap:.5rem;align-self:flex-end;">
+        <button type="submit" class="btn btn-primary btn-sm" style="white-space:nowrap;">
+          <i class="fas fa-filter"></i> Apply
+        </button>
+        <a href="{% url 'requests:list' %}" class="btn btn-outline btn-sm" style="white-space:nowrap;">
+          <i class="fas fa-times"></i> Clear
+        </a>
+      </div>
+
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>
+      <i class="fas fa-list"></i>
+      Requests List
+    </h3>
+    <span class="badge badge-info">
+      <i class="fas fa-clipboard"></i>
+      {{ requests_list|length }} request{{ requests_list|length|pluralize }}
+    </span>
+  </div>
+  <div class="card-body">
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            {% if user.role == 'admin' %}<th>Hospital</th>{% endif %}
+            <th>Blood Group</th>
+            <th>Units</th>
+            <th>Urgency</th>
+            <th>Status</th>
+            <th>Required By</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for br in requests_list %}
+          <tr>
+            <td><strong>#{{ br.pk }}</strong></td>
+            {% if user.role == 'admin' %}
+              <td class="text-truncate">
+                <i class="fas fa-hospital"></i>
+                {{ br.hospital.name }}
+              </td>
+            {% endif %}
+            <td>
+              <span class="badge badge-danger">
+                <i class="fas fa-tint"></i>
+                {{ br.blood_group }}
+              </span>
+            </td>
+            <td><strong>{{ br.units_required }}</strong> units</td>
+            <td>
+              {% if br.urgency == 'critical' %}
+                <span class="badge badge-danger">
+                  <i class="fas fa-exclamation-circle"></i>
+                  Critical
+                </span>
+              {% elif br.urgency == 'urgent' %}
+                <span class="badge badge-warning">
+                  <i class="fas fa-exclamation-triangle"></i>
+                  Urgent
+                </span>
+              {% else %}
+                <span class="badge badge-info">
+                  <i class="fas fa-info-circle"></i>
+                  Normal
+                </span>
+              {% endif %}
+            </td>
+            <td>
+              {% if br.status == 'fulfilled' %}
+                <span class="badge badge-success">
+                  <i class="fas fa-check-double"></i>
+                  Fulfilled
+                </span>
+              {% elif br.status == 'approved' %}
+                <span class="badge badge-info">
+                  <i class="fas fa-check"></i>
+                  Approved
+                </span>
+              {% elif br.status == 'pending' %}
+                <span class="badge badge-warning">
+                  <i class="fas fa-clock"></i>
+                  Pending
+                </span>
+              {% elif br.status == 'rejected' %}
+                <span class="badge badge-danger">
+                  <i class="fas fa-times"></i>
+                  Rejected
+                </span>
+              {% else %}
+                <span class="badge badge-secondary">{{ br.status }}</span>
+              {% endif %}
+            </td>
+            <td class="text-nowrap">
+              <i class="fas fa-calendar"></i>
+              {{ br.required_by|date:"d M Y"|default:"—" }}
+            </td>
+            <td>
+              <a href="{% url 'requests:detail' br.pk %}" class="btn btn-sm btn-outline">
+                <i class="fas fa-eye"></i>
+                View
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="{% if user.role == 'admin' %}8{% else %}7{% endif %}">
+              <div class="empty-state">
+                <i class="fas fa-clipboard-list"></i>
+                <h3>No blood requests found</h3>
+                <p>Blood requests will appear here.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

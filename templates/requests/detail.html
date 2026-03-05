@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Request #{{ blood_request.pk }} – Blood Bank{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <h1>&#x1FA78; Blood Request #{{ blood_request.pk }}</h1>
+</div>
+
+<div class="card mb-2">
+  <table>
+    <tr><th>Hospital</th><td>{{ blood_request.hospital.name }}</td></tr>
+    <tr><th>Blood Group</th><td><span class="badge badge-info">{{ blood_request.blood_group }}</span></td></tr>
+    <tr><th>Units Required</th><td>{{ blood_request.units_required }}</td></tr>
+    <tr><th>Urgency</th>
+      <td>
+        {% if blood_request.urgency == 'critical' %}
+          <span class="badge badge-danger">Critical</span>
+        {% elif blood_request.urgency == 'urgent' %}
+          <span class="badge badge-warning">Urgent</span>
+        {% else %}
+          <span class="badge badge-info">Normal</span>
+        {% endif %}
+      </td>
+    </tr>
+    <tr><th>Status</th>
+      <td>
+        {% if blood_request.status == 'fulfilled' %}
+          <span class="badge badge-success">Fulfilled</span>
+        {% elif blood_request.status == 'approved' %}
+          <span class="badge badge-info">Approved</span>
+        {% elif blood_request.status == 'pending' %}
+          <span class="badge badge-warning">Pending</span>
+        {% elif blood_request.status == 'rejected' %}
+          <span class="badge badge-danger">Rejected</span>
+        {% else %}
+          <span class="badge">{{ blood_request.status }}</span>
+        {% endif %}
+      </td>
+    </tr>
+    <tr><th>Patient Name</th><td>{{ blood_request.patient_name|default:"—" }}</td></tr>
+    <tr><th>Reason</th><td>{{ blood_request.reason|default:"—" }}</td></tr>
+    <tr><th>Required By</th><td>{{ blood_request.required_by|date:"d M Y"|default:"—" }}</td></tr>
+    <tr><th>Created</th><td>{{ blood_request.created_at|date:"d M Y H:i" }}</td></tr>
+    {% if blood_request.fulfilled_at %}
+    <tr><th>Fulfilled At</th><td>{{ blood_request.fulfilled_at|date:"d M Y H:i" }}</td></tr>
+    {% endif %}
+    <tr><th>Inventory Available</th><td>{{ available_units }} unit(s) of {{ blood_request.blood_group }}</td></tr>
+  </table>
+</div>
+
+{% if user.role == 'admin' %}
+<div class="card">
+  <h3 class="mb-2">Admin Actions</h3>
+  <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
+    {% if blood_request.status == 'pending' %}
+      <form method="post" action="{% url 'requests:update' blood_request.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="approve">
+        <button type="submit" class="btn btn-primary btn-sm">Approve</button>
+      </form>
+      <form method="post" action="{% url 'requests:update' blood_request.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="reject">
+        <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+      </form>
+    {% elif blood_request.status == 'approved' %}
+      <form method="post" action="{% url 'requests:update' blood_request.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="fulfill">
+        <button type="submit" class="btn btn-primary btn-sm"
+          {% if available_units < blood_request.units_required %}disabled title="Not enough inventory"{% endif %}>
+          Fulfill (deduct {{ blood_request.units_required }} units)
+        </button>
+      </form>
+      <form method="post" action="{% url 'requests:update' blood_request.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="reject">
+        <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="mt-2">
+  <a href="{% url 'requests:list' %}" class="btn btn-outline">&larr; Back to Requests</a>
+</div>
+{% endblock %}

@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}Donor Dashboard – Blood Bank{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <h1>
+    <i class="fas fa-hand-holding-heart"></i>
+    Donor Dashboard
+  </h1>
+  <p>Welcome back, <strong>{{ user.email }}</strong></p>
+</div>
+
+{% if donor %}
+<!-- Profile Summary Card -->
+<div class="stats-grid">
+  <div class="stat-card stat-danger">
+    <div class="stat-value">
+      <i class="fas fa-tint"></i>
+      {{ donor.blood_group }}
+    </div>
+    <div class="stat-label">Blood Group</div>
+  </div>
+  
+  <div class="stat-card {% if donor.is_eligible %}stat-success{% else %}stat-danger{% endif %}">
+    <div class="stat-value">
+      {% if donor.is_eligible %}
+        <i class="fas fa-check-circle"></i>
+      {% else %}
+        <i class="fas fa-times-circle"></i>
+      {% endif %}
+    </div>
+    <div class="stat-label">Eligible to Donate</div>
+  </div>
+  
+  <div class="stat-card stat-info">
+    <div class="stat-value" style="font-size:1.2rem;">
+      <i class="fas fa-calendar"></i>
+      {{ donor.last_donation_date|date:"d M Y"|default:"—" }}
+    </div>
+    <div class="stat-label">Last Donation</div>
+  </div>
+</div>
+
+<!-- Quick Nav -->
+<div class="card mb-3">
+  <div class="action-bar">
+    <h3>
+      <i class="fas fa-bolt"></i>
+      Quick Actions
+    </h3>
+    <a href="{% url 'donors:profile' %}" class="btn btn-outline btn-sm">
+      <i class="fas fa-user"></i>
+      My Profile
+    </a>
+    <a href="{% url 'donations:slot_list' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-calendar-check"></i>
+      Book Donation Slot
+    </a>
+    <a href="{% url 'donations:history' %}" class="btn btn-outline btn-sm">
+      <i class="fas fa-history"></i>
+      Donation History
+    </a>
+  </div>
+</div>
+
+<!-- Recent Donation History -->
+<div class="card">
+  <div class="card-header">
+    <h3>
+      <i class="fas fa-history"></i>
+      Recent Donation History
+    </h3>
+  </div>
+  <div class="card-body">
+    {% if recent_history %}
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Blood Group</th>
+              <th>Units</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for h in recent_history %}
+            <tr>
+              <td class="text-nowrap">
+                <i class="fas fa-calendar"></i>
+                {{ h.created_at|date:"d M Y" }}
+              </td>
+              <td>
+                <span class="badge badge-danger">
+                  <i class="fas fa-tint"></i>
+                  {{ h.blood_group }}
+                </span>
+              </td>
+              <td><strong>{{ h.units_donated }}</strong> units</td>
+              <td>
+                {% if h.status == 'completed' %}
+                  <span class="badge badge-success">
+                    <i class="fas fa-check-circle"></i>
+                    Completed
+                  </span>
+                {% elif h.status == 'approved' %}
+                  <span class="badge badge-info">
+                    <i class="fas fa-check"></i>
+                    Approved
+                  </span>
+                {% elif h.status == 'pending' %}
+                  <span class="badge badge-warning">
+                    <i class="fas fa-clock"></i>
+                    Pending
+                  </span>
+                {% elif h.status == 'cancelled' %}
+                  <span class="badge badge-danger">
+                    <i class="fas fa-ban"></i>
+                    Cancelled
+                  </span>
+                {% else %}
+                  <span class="badge badge-secondary">{{ h.status }}</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <i class="fas fa-heart"></i>
+        <h3>No donation history yet</h3>
+        <p>Start saving lives by booking your first donation slot.</p>
+        <a href="{% url 'donations:slot_list' %}" class="btn btn-primary">
+          <i class="fas fa-plus"></i>
+          Book Your First Slot
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% else %}
+<!-- New donor – prompt profile creation -->
+<div class="card">
+  <div class="empty-state">
+    <i class="fas fa-user-plus"></i>
+    <h3>Complete Your Donor Profile</h3>
+    <p>Please complete your profile to start donating blood and saving lives.</p>
+    <a href="{% url 'donors:register' %}" class="btn btn-primary btn-lg">
+      <i class="fas fa-clipboard-check"></i>
+      Complete Profile
+    </a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

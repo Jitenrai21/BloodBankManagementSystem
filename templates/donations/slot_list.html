@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Donation Slots – Blood Bank{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <h1>&#x1F4C5; Donation Slots</h1>
+</div>
+
+{% if is_admin %}
+<div class="mb-2">
+  <a href="{% url 'donations:slot_create' %}" class="btn btn-primary btn-sm">+ Create Slot</a>
+  <a href="{% url 'donations:history' %}" class="btn btn-outline btn-sm">All Donations</a>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Capacity</th>
+          <th>Booked</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for slot in slots %}
+        <tr>
+          <td>{{ slot.date|date:"d M Y" }}</td>
+          <td>{{ slot.time|time:"H:i" }}</td>
+          <td>{{ slot.max_capacity }}</td>
+          <td>{{ slot.booked_count }}</td>
+          <td>
+            {% if not slot.is_active %}
+              <span class="badge badge-danger">Inactive</span>
+            {% elif slot.is_full %}
+              <span class="badge badge-warning">Full</span>
+            {% else %}
+              <span class="badge badge-success">Open</span>
+            {% endif %}
+          </td>
+          <td style="display:flex;gap:.5rem;flex-wrap:wrap;">
+            {% if is_admin %}
+              <a href="{% url 'donations:slot_edit' slot.pk %}" class="btn btn-sm btn-outline">Edit</a>
+            {% endif %}
+            {% if user.role == 'donor' and slot.is_active and not slot.is_full %}
+              <a href="{% url 'donations:book_slot' slot.pk %}" class="btn btn-sm btn-primary">Book</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6">No donation slots available.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

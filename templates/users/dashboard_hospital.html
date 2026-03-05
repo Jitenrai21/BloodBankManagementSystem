@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}Hospital Dashboard – Blood Bank{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <h1>
+    <i class="fas fa-hospital"></i>
+    Hospital Dashboard
+  </h1>
+  <p>
+    Welcome, <strong>{{ user.email }}</strong>
+    {% if hospital %} &ndash; <strong>{{ hospital.name }}</strong>{% endif %}
+  </p>
+</div>
+
+{% if hospital %}
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card stat-warning">
+    <div class="stat-value">
+      <i class="fas fa-clipboard-list"></i>
+      {{ active_count }}
+    </div>
+    <div class="stat-label">Active Requests</div>
+  </div>
+  
+  <div class="stat-card stat-success">
+    <div class="stat-value">
+      <i class="fas fa-check-double"></i>
+      {{ fulfilled_count }}
+    </div>
+    <div class="stat-label">Fulfilled Requests</div>
+  </div>
+  
+  <div class="stat-card {% if hospital.is_verified %}stat-success{% else %}stat-warning{% endif %}">
+    <div class="stat-value">
+      {% if hospital.is_verified %}
+        <i class="fas fa-check-circle"></i>
+      {% else %}
+        <i class="fas fa-hourglass-half"></i>
+      {% endif %}
+    </div>
+    <div class="stat-label">Verification Status</div>
+  </div>
+</div>
+
+{% if not hospital.is_verified %}
+<div class="alert alert-warning" role="alert">
+  <i class="fas fa-exclamation-triangle"></i>
+  <strong>Pending Verification:</strong> Your hospital profile is awaiting admin verification. You can create requests, but they will require admin approval.
+</div>
+{% endif %}
+
+<!-- Quick Nav -->
+<div class="card mb-3">
+  <div class="action-bar">
+    <h3>
+      <i class="fas fa-bolt"></i>
+      Quick Actions
+    </h3>
+    <a href="{% url 'requests:create' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus"></i>
+      New Blood Request
+    </a>
+    <a href="{% url 'requests:list' %}" class="btn btn-outline btn-sm">
+      <i class="fas fa-list"></i>
+      My Requests
+    </a>
+    <a href="{% url 'hospitals:profile' %}" class="btn btn-outline btn-sm">
+      <i class="fas fa-hospital-user"></i>
+      Hospital Profile
+    </a>
+    <a href="{% url 'inventory:list' %}" class="btn btn-outline btn-sm">
+      <i class="fas fa-box"></i>
+      View Inventory
+    </a>
+  </div>
+</div>
+
+<!-- Recent Requests -->
+<div class="card">
+  <div class="card-header">
+    <h3>
+      <i class="fas fa-clipboard-list"></i>
+      Recent Blood Requests
+    </h3>
+  </div>
+  <div class="card-body">
+    {% if recent_requests %}
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Blood Group</th>
+              <th>Units</th>
+              <th>Urgency</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for req in recent_requests %}
+            <tr>
+              <td class="text-nowrap">
+                <i class="fas fa-calendar"></i>
+                {{ req.created_at|date:"d M Y" }}
+              </td>
+              <td>
+                <span class="badge badge-danger">
+                  <i class="fas fa-tint"></i>
+                  {{ req.blood_group }}
+                </span>
+              </td>
+              <td><strong>{{ req.units_required }}</strong> units</td>
+              <td>
+                {% if req.urgency == 'critical' %}
+                  <span class="badge badge-danger">
+                    <i class="fas fa-exclamation-circle"></i>
+                    Critical
+                  </span>
+                {% elif req.urgency == 'urgent' %}
+                  <span class="badge badge-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Urgent
+                  </span>
+                {% else %}
+                  <span class="badge badge-info">
+                    <i class="fas fa-info-circle"></i>
+                    Normal
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                {% if req.status == 'fulfilled' %}
+                  <span class="badge badge-success">
+                    <i class="fas fa-check-double"></i>
+                    Fulfilled
+                  </span>
+                {% elif req.status == 'approved' %}
+                  <span class="badge badge-info">
+                    <i class="fas fa-check"></i>
+                    Approved
+                  </span>
+                {% elif req.status == 'pending' %}
+                  <span class="badge badge-warning">
+                    <i class="fas fa-clock"></i>
+                    Pending
+                  </span>
+                {% elif req.status == 'rejected' %}
+                  <span class="badge badge-danger">
+                    <i class="fas fa-times"></i>
+                    Rejected
+                  </span>
+                {% else %}
+                  <span class="badge badge-secondary">{{ req.status }}</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state" style="padding:3.5rem 2rem;">
+        <div style="background:var(--red-light,#fde8e8);border-radius:50%;width:5.5rem;height:5.5rem;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;box-shadow:0 4px 16px rgba(220,38,38,.15);">
+          <i class="fas fa-clipboard-list" style="font-size:2.2rem;color:var(--red);"></i>
+        </div>
+        <h3 style="font-size:1.3rem;font-weight:700;margin-bottom:0.5rem;color:var(--grey-800);">No Blood Requests Yet</h3>
+        <p class="text-muted" style="max-width:380px;margin:0 auto 1.75rem;line-height:1.6;">Your hospital hasn't submitted any blood requests. When you create a request it will appear here for tracking.</p>
+        <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;">
+          <a href="{% url 'requests:create' %}" class="btn btn-primary">
+            <i class="fas fa-plus-circle"></i> New Blood Request
+          </a>
+          <a href="{% url 'inventory:list' %}" class="btn btn-outline">
+            <i class="fas fa-box"></i> View Inventory
+          </a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% else %}
+<!-- New hospital – prompt profile creation -->
+<div class="card">
+  <div class="empty-state">
+    <i class="fas fa-hospital-alt"></i>
+    <h3>Complete Your Hospital Profile</h3>
+    <p>Please complete your hospital profile to start requesting blood supplies.</p>
+    <a href="{% url 'hospitals:register' %}" class="btn btn-primary btn-lg">
+      <i class="fas fa-clipboard-check"></i>
+      Complete Profile
+    </a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

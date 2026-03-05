@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Blood Bank Management System - Save Lives Through Blood Donation">
+    <title>{% block title %}Blood Bank Management System{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav role="navigation" aria-label="Main navigation">
+        <a class="brand" href="/" aria-label="Blood Bank Home">
+            <i class="fas fa-heartbeat"></i>
+            <span>BloodBank</span>
+        </a>
+        <div class="nav-links">
+            {% if user.is_authenticated %}
+                <span class="user-badge">
+                    <i class="fas fa-user-circle"></i>
+                    {{ user.email }} &bull; {{ user.role|upper }}
+                </span>
+                <a href="{% url 'users:dashboard' %}">
+                    <i class="fas fa-chart-line"></i>
+                    Dashboard
+                </a>
+                <a href="{% url 'users:profile' %}">
+                    <i class="fas fa-user"></i>
+                    Profile
+                </a>
+                <a href="{% url 'users:logout' %}">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </a>
+            {% else %}
+                <a href="{% url 'users:login' %}">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Login
+                </a>
+                <a href="{% url 'users:register' %}">
+                    <i class="fas fa-user-plus"></i>
+                    Register
+                </a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <main role="main">
+        {% if messages %}
+            <ul class="messages" role="alert" aria-live="polite">
+                {% for message in messages %}
+                    <li class="alert alert-{{ message.tags }}">
+                        {% if message.tags == 'success' %}
+                            <i class="fas fa-check-circle"></i>
+                        {% elif message.tags == 'error' or message.tags == 'danger' %}
+                            <i class="fas fa-exclamation-circle"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="fas fa-exclamation-triangle"></i>
+                        {% elif message.tags == 'info' %}
+                            <i class="fas fa-info-circle"></i>
+                        {% endif %}
+                        {{ message }}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer role="contentinfo">
+        <p>
+            <i class="fas fa-copyright"></i>
+            2026 Blood Bank Management System. All rights reserved.
+        </p>
+    </footer>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Profile – Blood Bank{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <h1>&#x1F464; My Profile</h1>
+</div>
+
+<div class="card" style="max-width:500px;">
+  <h3 class="mb-2">Account Details</h3>
+  <table>
+    <tr><th>Email</th><td>{{ user.email }}</td></tr>
+    <tr><th>Phone</th><td>{{ user.phone|default:"—" }}</td></tr>
+    <tr><th>Role</th><td><span class="badge badge-info">{{ user.role }}</span></td></tr>
+    <tr><th>Status</th><td>
+      {% if user.is_active %}<span class="badge badge-success">Active</span>{% else %}<span class="badge badge-danger">Inactive</span>{% endif %}
+    </td></tr>
+    <tr><th>Approved</th><td>
+      {% if user.is_approved %}<span class="badge badge-success">Yes</span>{% else %}<span class="badge badge-warning">Pending</span>{% endif %}
+    </td></tr>
+    <tr><th>Joined</th><td>{{ user.date_joined|date:"d M Y, H:i" }}</td></tr>
+  </table>
+  <a href="{% url 'users:dashboard' %}" class="btn btn-outline btn-sm mt-2">Back to Dashboard</a>
+</div>
+{% endblock %}

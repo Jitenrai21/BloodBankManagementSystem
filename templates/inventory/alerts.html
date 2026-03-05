@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Expiry Alerts – Blood Bank{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <h1>&#x26A0; Expiry Alerts</h1>
+  <p>Blood inventory expiring within the next 7 days.</p>
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Blood Group</th>
+          <th>Type</th>
+          <th>Qty (units)</th>
+          <th>Collected</th>
+          <th>Expires</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inv in expiring %}
+        <tr>
+          <td><span class="badge badge-info">{{ inv.blood_group }}</span></td>
+          <td>{{ inv.get_blood_type_display }}</td>
+          <td>{{ inv.quantity_units }}</td>
+          <td>{{ inv.collection_date|date:"d M Y" }}</td>
+          <td style="color:var(--red);font-weight:bold;">{{ inv.expiry_date|date:"d M Y" }}</td>
+          <td><a href="{% url 'inventory:update' inv.pk %}" class="btn btn-sm btn-outline">Edit</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6">No items expiring soon. &#x2705;</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<a href="{% url 'inventory:list' %}" class="btn btn-outline">&larr; Back to Inventory</a>
+{% endblock %}
