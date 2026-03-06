@@ -5,7 +5,7 @@ from .models import DonationSlot
 class DonationSlotForm(forms.ModelForm):
     class Meta:
         model = DonationSlot
-        fields = ["date", "time", "max_capacity", "is_active"]
+        fields = ["date", "time", "max_capacity"]
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}),
             "time": forms.TimeInput(attrs={"type": "time"}),

@@ -1,0 +1,130 @@
+BLOOD BANK MANAGEMENT SYSTEM
+System Architecture Document
+==============================
+
+---
+
+1. ARCHITECTURE OVERVIEW
+--------------------------
+
+  Client (Browser)
+       │
+       │  HTTP Requests (GET / POST / JSON)
+       ▼
+  ┌─────────────────────────────────────────────┐
+  │           Django Frontend Layer             │
+  │  Django Templates (HTML/CSS/JS)             │
+  │  - login.html, register.html                │
+  │  - dashboard_admin/donor/hospital.html      │
+  │  - inventory, requests, donations pages     │
+  └─────────────────────┬───────────────────────┘
+                        │
+                        │ Django Views / URL Routing
+                        ▼
+  ┌─────────────────────────────────────────────┐
+  │           Django Backend Layer              │
+  │  - Session-based Auth (login/logout)        │
+  │  - Role-based access decorators             │
+  │  - Business logic (eligibility, fraud)      │
+  │  - Django REST Framework (API endpoints)    │
+  │    → /api/auth/  (register, login, logout)  │
+  │    → /api/inventory/                        │
+  │    → /api/requests/                         │
+  │    → /api/donations/                        │
+  │    → /api/fraud/                            │
+  └─────────────────────┬───────────────────────┘
+                        │
+                        │ Django ORM
+                        ▼
+  ┌─────────────────────────────────────────────┐
+  │           SQLite Database Layer             │
+  │  Tables: users, donors, hospitals,          │
+  │  blood_inventory, donation_history,         │
+  │  blood_requests, fraud_logs, sessions       │
+  └─────────────────────────────────────────────┘
+
+---
+
+2. REQUEST FLOW (Session Auth)
+--------------------------------
+  1. User submits login form → POST /users/login/
+  2. Django authenticates credentials (email + password)
+  3. Session created → session ID stored in browser cookie
+  4. User redirected to /users/dashboard/
+  5. Dashboard view checks user.role → renders role-specific template
+  6. All subsequent requests carry session cookie for auth
+
+---
+
+3. REQUEST FLOW (REST API)
+----------------------------
+  1. Client sends POST /api/auth/login/ with JSON {email, password}
+  2. Django validates → returns session cookie (or token if added)
+  3. Client uses session cookie for subsequent API calls
+  4. API returns JSON responses (status, data, errors)
+
+---
+
+4. ROLE-BASED ACCESS CONTROL
+------------------------------
+  Role       | Access Level
+  -----------|--------------------------------------------------
+  admin      | All apps: users, inventory, donations, requests, fraud
+  donor      | donors, donations (own), profile
+  hospital   | hospitals, requests (own), profile
+
+  Enforcement: @login_required + role_required decorator on all views
+  Admin panel: /admin/ (Django built-in, superuser only)
+
+---
+
+5. PROJECT FOLDER STRUCTURE
+-----------------------------
+  Blood_Bank_Management_System/
+  ├── blood_bank/          ← Project config (settings, urls, wsgi, asgi)
+  ├── users/               ← Auth, user model, role management
+  ├── donors/              ← Donor profiles, eligibility
+  ├── hospitals/           ← Hospital profiles, verification
+  ├── inventory/           ← Blood unit inventory
+  ├── donations/           ← Donation slots and history
+  ├── requests/            ← Hospital blood requests
+  ├── fraud/               ← Fraud detection and logging
+  ├── templates/           ← All HTML templates (per-app folders)
+  │   ├── base.html
+  │   ├── users/
+  │   ├── donors/
+  │   ├── hospitals/
+  │   ├── inventory/
+  │   ├── donations/
+  │   ├── requests/
+  │   └── fraud/
+  ├── static/              ← CSS, JS, images
+  ├── media/               ← Uploaded files
+  ├── development_assets/  ← Docs (roadmap, requirements, wireframes, architecture)
+  ├── env/                 ← Virtual environment
+  ├── requirements.txt
+  ├── .gitignore
+  └── manage.py
+
+---
+
+6. API ENDPOINT MAP
+---------------------
+  Method  | Endpoint                      | Description
+  --------|-------------------------------|----------------------------------
+  POST    | /api/auth/register/           | Register new user
+  POST    | /api/auth/login/              | Login, returns session
+  POST    | /api/auth/logout/             | Logout, clears session
+  GET     | /api/auth/me/                 | Get current user info
+  GET     | /api/inventory/               | List blood inventory
+  POST    | /api/inventory/               | Add blood unit (admin)
+  GET     | /api/requests/                | List blood requests
+  POST    | /api/requests/                | Create blood request (hospital)
+  PATCH   | /api/requests/<id>/           | Update request status (admin)
+  GET     | /api/donations/slots/         | List donation slots
+  POST    | /api/donations/book/<id>/     | Book a slot (donor)
+  GET     | /api/fraud/logs/              | List fraud flags (admin)
+  PATCH   | /api/fraud/logs/<id>/resolve/ | Resolve a fraud flag (admin)
+
+---
+END OF ARCHITECTURE DOCUMENT

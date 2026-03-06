@@ -31,6 +31,12 @@ class BloodInventory(models.Model):
         from django.utils import timezone
         return self.expiry_date < timezone.now().date()
 
+    def save(self, *args, **kwargs):
+        from django.utils import timezone
+        if self.expiry_date and self.expiry_date < timezone.now().date():
+            self.is_available = False
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.blood_group} {self.blood_type} - {self.quantity_units} units (Exp: {self.expiry_date})"
 

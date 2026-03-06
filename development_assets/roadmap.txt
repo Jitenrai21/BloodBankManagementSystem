@@ -1,0 +1,70 @@
+Phase 1: Weeks 1–2 – Requirement Analysis & Planning (Done / Refine)
+
+Finalize detailed requirements → user stories (e.g., "As a donor, I can register with email/phone verification").
+Create detailed ER diagram (users, donations, requests, inventory, blood units with group/type/expiry/quantity).
+Design database schema (sqlite): tables for users (role-based), donors, hospitals, blood_inventory, donation_history, requests, fraud_logs.
+Set up project: GitHub repo, install tools (VS Code, Python, MySQL Workbench, Postman).
+Milestone: Requirements doc updated, basic wireframes (use pen/paper or Figma), database schema ready.
+
+Phase 2: Weeks 3–4 – System Design & Setup
+
+Design architecture: Client (browser) → Frontend → Backend APIs → sqlite.
+Create basic project structure: folders for frontend, backend, docs.
+Set up backend (Flask/FastAPI)
+Implement authentication: Register/login/logout with role-based access (use JWT or session + bcrypt).
+Build basic frontend pages: login, dashboard skeletons for each role.
+Milestone: Running skeleton app with login + role redirection; basic API endpoints tested in Postman.
+
+Phase 3: Weeks 5–7 – Core Development Phase I (MVP – Essential Features)
+
+Admin panel: Manage users (approve/block), view inventory, basic reports.
+Donor panel: Register (with basic validation), view profile/history, book donation slot (simple calendar).
+Hospital panel: Register/approve, request blood (select group, quantity, urgency), view request status.
+Inventory module: Add/update blood units (group, expiry, quantity), check availability, simple expiry alerts.
+Basic security: Input validation, role checks, audit logs for key actions.
+Milestone: End-to-end flows working (donor registers → books donation → admin approves → inventory updates → hospital requests blood).
+
+Phase 4: Weeks 8–9 – Core Development Phase II + Fraud Detection
+
+Implement real-time-ish inventory (refresh or simple polling).
+Fraud detection module (start simple → advance if time):
+Rule-based: Check duplicate phone/email/name (exact + fuzzy with libraries like fuzzywuzzy).
+Anomaly flags: Donation frequency > limit (e.g., >4/year), multiple requests from same IP, suspicious patterns.
+Basic ML (optional stretch): Use scikit-learn Isolation Forest or simple clustering on registration data; generate risk score (0-100).
+Show alerts/risk in admin panel + log suspicious activity.
+
+Add donor/hospital history views, basic notifications (email or in-app).
+Milestone: Fraud rules working + alerts visible; full CRUD flows stable.
+
+Phase 5: Week 10 – Testing
+
+Unit tests (backend APIs), manual testing (all flows, edge cases like duplicate reg, expired blood).
+Security checks: SQL injection, XSS prevention, proper auth bypass attempts.
+Usability testing: Get feedback from 3–5 friends (donor/hospital scenarios).
+Fix bugs, optimize queries.
+Milestone: Stable, bug-minimal version; test report.
+
+Phase 6: Week 11 – Deployment & Polish
+
+Deploy: Backend + frontend (e.g., Render.com or Heroku free tier + MySQL hosted).
+Set up domain (free subdomain) or localhost demo + HTTPS.
+Add documentation: User manual, API docs (if applicable), final code comments.
+Prepare demo video/screenshots.
+Milestone: Live/demo-ready system.
+
+Phase 7: Week 12 – Maintenance, Documentation & Submission
+
+Final refinements based on supervisor feedback.
+Write full report/thesis chapters (align with your synopsis).
+Prepare presentation slides + demo.
+Backup everything.
+Milestone: Project submitted.
+
+Tips for Success
+
+Track progress weekly (burndown or simple checklist).
+Commit daily — even small changes.
+Start fraud detection early with rules (easier to demo than ML).
+If time short, deprioritize advanced ML → focus on rule-based + good UI.
+Document as you go (README, inline comments).
+Test with realistic data (dummy donors/hospitals).

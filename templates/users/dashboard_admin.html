@@ -258,8 +258,39 @@
       </a>
     </div>
   </div>
-  {% endif %}
-  <!-- ── Top Stats Cards ───────────────────────────────── -->
+  {% endif %}  <!-- ── Pending Slot Booking Alert ──────────────────── -->
+  {% if pending_slot_bookings_count > 0 %}
+  <div class="admin-alert-banner" style="border-left-color:#0284c7;background:linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 100%);box-shadow:0 2px 8px rgba(2,132,199,0.12);">
+    <div class="ab-icon" style="color:#0284c7;">
+      <i class="fas fa-calendar-check"></i>
+    </div>
+    <div class="ab-body">
+      <div class="ab-title" style="color:#0369a1;">
+        New Donation Slot Booking{{ pending_slot_bookings_count|pluralize }}
+      </div>
+      <div class="ab-meta">
+        <span>
+          <i class="fas fa-hand-holding-heart"></i>
+          <strong>{{ pending_slot_bookings_count }}</strong>
+          donor booking{{ pending_slot_bookings_count|pluralize }} awaiting your approval
+        </span>
+        {% for b in pending_slot_bookings_qs %}
+          <span class="badge badge-info">
+            <i class="fas fa-user"></i> {{ b.donor.user.email|truncatechars:22 }}
+            &middot;
+            <i class="fas fa-tint"></i> {{ b.blood_group }}
+            {% if b.slot %}&middot; {{ b.slot.date|date:"d M" }}{% endif %}
+          </span>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="ab-action">
+      <a href="{% url 'donations:history' %}" class="btn btn-sm btn-primary">
+        <i class="fas fa-arrow-right"></i> Review Bookings
+      </a>
+    </div>
+  </div>
+  {% endif %}  <!-- ── Top Stats Cards ───────────────────────────────── -->
   <div class="stats-grid mb-3">
     <div class="stat-card">
       <div class="stat-icon"><i class="fas fa-users"></i></div>
@@ -475,8 +506,13 @@
               <span class="badge badge-danger" style="margin:1px 2px;">{{ item.blood_group }}: {{ item.expired_units }}u</span>
             {% endfor %}
           </div>
-          <a href="{% url 'inventory:list' %}" class="btn btn-sm btn-danger" style="margin-left:auto;white-space:nowrap;flex-shrink:0;">
-            <i class="fas fa-trash-alt"></i> Manage
+          <a href="{% url 'inventory:list' %}?expired=1"
+             class="btn btn-sm"
+             style="margin-left:auto;white-space:nowrap;flex-shrink:0;background:#fff5f5;color:var(--red);border:1.5px solid #ffcdd2;border-radius:var(--radius);font-weight:600;transition:background .16s,color .16s,box-shadow .16s,transform .12s;"
+             onmouseover="this.style.background='var(--red)';this.style.color='#fff';this.style.boxShadow='0 3px 10px rgba(211,47,47,.28)';this.style.transform='translateY(-1px)';"
+             onmouseout="this.style.background='#fff5f5';this.style.color='var(--red)';this.style.boxShadow='none';this.style.transform='none';"
+             data-tooltip="View and remove expired units">
+            <i class="fas fa-exclamation-circle"></i> Review Expired
           </a>
         </div>
         {% endif %}
@@ -485,7 +521,7 @@
         <a href="{% url 'inventory:list' %}" class="btn btn-primary btn-sm">
           <i class="fas fa-plus-circle"></i> Add Stock
         </a>
-        <a href="{% url 'inventory:list' %}?expiring=1" class="btn btn-warning btn-sm">
+        <a href="{% url 'inventory:list' %}?expiring=1" class="btn btn-warning btn-sm" style="cursor:pointer;">
           <i class="fas fa-exclamation-triangle"></i> Expiry Alerts
         </a>
       </div>

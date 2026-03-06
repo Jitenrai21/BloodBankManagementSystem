@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+import datetime
 
 
 class DonationSlot(models.Model):
@@ -11,6 +12,20 @@ class DonationSlot(models.Model):
 
     def is_full(self):
         return self.booked_count >= self.max_capacity
+
+    def is_past(self):
+        """Returns True if the slot date/time has already passed."""
+        from django.utils import timezone
+        slot_dt = datetime.datetime.combine(self.date, self.time)
+        if timezone.is_naive(slot_dt):
+            slot_dt = timezone.make_aware(slot_dt)
+        return slot_dt < timezone.now()
+
+    def save(self, *args, **kwargs):
+        """Auto-deactivate slots whose date/time has passed."""
+        if self.is_past():
+            self.is_active = False
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Slot {self.date} {self.time} ({self.booked_count}/{self.max_capacity})"

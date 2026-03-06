@@ -688,7 +688,7 @@ footer {
 /* ── Tooltips ─────────────────────────────────────────────────────── */
 [data-tooltip] {
   position: relative;
-  cursor: help;
+  cursor: pointer;
 }
 
 [data-tooltip]::before {

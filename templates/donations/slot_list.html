@@ -3,56 +3,98 @@
 
 {% block content %}
 <div class="dashboard-header">
-  <h1>&#x1F4C5; Donation Slots</h1>
+  <h1><i class="fas fa-calendar-alt"></i> Donation Slots</h1>
+  {% if is_admin %}
+    <div style="display:flex;gap:.5rem;">
+      <a href="{% url 'donations:slot_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus-circle"></i> Create Slot
+      </a>
+      <a href="{% url 'donations:history' %}" class="btn btn-outline btn-sm">
+        <i class="fas fa-history"></i> All Donations
+        {% if pending_bookings_count > 0 %}
+          <span class="badge badge-warning" style="margin-left:.3rem;">{{ pending_bookings_count }}</span>
+        {% endif %}
+      </a>
+    </div>
+  {% endif %}
 </div>
 
-{% if is_admin %}
-<div class="mb-2">
-  <a href="{% url 'donations:slot_create' %}" class="btn btn-primary btn-sm">+ Create Slot</a>
-  <a href="{% url 'donations:history' %}" class="btn btn-outline btn-sm">All Donations</a>
+{% if is_admin and pending_bookings_count > 0 %}
+<div class="alert alert-warning" role="alert">
+  <i class="fas fa-calendar-check"></i>
+  <strong>{{ pending_bookings_count }} new booking{{ pending_bookings_count|pluralize }}</strong> awaiting your approval.
+  <a href="{% url 'donations:history' %}" style="font-weight:600;margin-left:.5rem;">
+    Review Now <i class="fas fa-arrow-right"></i>
+  </a>
 </div>
 {% endif %}
 
 <div class="card">
+  <div class="card-header">
+    <i class="fas fa-list"></i> Slot List
+    <span class="badge badge-info" style="margin-left:auto;">{{ slots|length }} slot{{ slots|length|pluralize }}</span>
+  </div>
   <div class="table-wrapper">
     <table>
       <thead>
         <tr>
-          <th>Date</th>
-          <th>Time</th>
-          <th>Capacity</th>
-          <th>Booked</th>
-          <th>Status</th>
-          <th>Action</th>
+          <th><i class="fas fa-calendar"></i> Date</th>
+          <th><i class="fas fa-clock"></i> Time</th>
+          <th><i class="fas fa-users"></i> Capacity</th>
+          <th><i class="fas fa-user-check"></i> Booked</th>
+          <th><i class="fas fa-toggle-on"></i> Status</th>
+          <th><i class="fas fa-cog"></i> Action</th>
         </tr>
       </thead>
       <tbody>
         {% for slot in slots %}
-        <tr>
+        <tr {% if not slot.is_active %}style="opacity:.7;"{% endif %}>
           <td>{{ slot.date|date:"d M Y" }}</td>
           <td>{{ slot.time|time:"H:i" }}</td>
           <td>{{ slot.max_capacity }}</td>
-          <td>{{ slot.booked_count }}</td>
+          <td>
+            <strong>{{ slot.booked_count }}</strong>
+            <span class="text-muted" style="font-size:.8rem;">/ {{ slot.max_capacity }}</span>
+          </td>
           <td>
             {% if not slot.is_active %}
-              <span class="badge badge-danger">Inactive</span>
+              <span class="badge badge-danger"><i class="fas fa-ban"></i> Inactive</span>
             {% elif slot.is_full %}
-              <span class="badge badge-warning">Full</span>
+              <span class="badge badge-warning"><i class="fas fa-lock"></i> Fully Booked</span>
             {% else %}
-              <span class="badge badge-success">Open</span>
+              <span class="badge badge-success"><i class="fas fa-check-circle"></i> Open</span>
             {% endif %}
           </td>
-          <td style="display:flex;gap:.5rem;flex-wrap:wrap;">
-            {% if is_admin %}
-              <a href="{% url 'donations:slot_edit' slot.pk %}" class="btn btn-sm btn-outline">Edit</a>
+          <td>
+            {% if is_admin and slot.is_active %}
+              <a href="{% url 'donations:slot_edit' slot.pk %}" class="btn btn-sm btn-outline" data-tooltip="Edit slot capacity or schedule">
+                <i class="fas fa-edit"></i> Edit
+              </a>
+            {% elif is_admin %}
+              <span class="text-muted" style="font-size:.82rem;">Auto-closed</span>
             {% endif %}
             {% if user.role == 'donor' and slot.is_active and not slot.is_full %}
-              <a href="{% url 'donations:book_slot' slot.pk %}" class="btn btn-sm btn-primary">Book</a>
+              <a href="{% url 'donations:book_slot' slot.pk %}" class="btn btn-sm btn-primary">
+                <i class="fas fa-calendar-check"></i> Book
+              </a>
             {% endif %}
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="6">No donation slots available.</td></tr>
+        <tr>
+          <td colspan="6" style="padding:0;">
+            <div class="empty-state" style="padding:3rem 1rem;">
+              <i class="fas fa-calendar-times" style="font-size:2rem;color:var(--grey-400);"></i>
+              <h3 style="margin:.75rem 0 .4rem;">No Slots Available</h3>
+              <p class="text-muted">{% if is_admin %}Create a new donation slot to get started.{% else %}No donation slots are currently open. Check back later.{% endif %}</p>
+              {% if is_admin %}
+                <a href="{% url 'donations:slot_create' %}" class="btn btn-primary btn-sm" style="margin-top:.75rem;">
+                  <i class="fas fa-plus-circle"></i> Create Slot
+                </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>

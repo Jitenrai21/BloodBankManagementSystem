@@ -1,6 +1,70 @@
 {% extends "base.html" %}
 {% block title %}Blood Inventory – Blood Bank{% endblock %}
 
+{% block extra_css %}
+<style>
+/* ── Inventory action button hover effects ── */
+.btn-edit-inv {
+  color: var(--primary, #1565c0);
+  border-color: var(--primary, #1565c0);
+  background: transparent;
+  cursor: pointer;
+  transition: background .16s, color .16s, box-shadow .16s, transform .13s;
+}
+.btn-edit-inv:hover {
+  background: var(--primary, #1565c0);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(21,101,192,.28);
+  transform: translateY(-1px);
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn-delete-inv {
+  color: var(--red, #d32f2f);
+  border-color: #ffcdd2;
+  background: #fff5f5;
+  cursor: pointer;
+  padding: .35rem .7rem;
+  min-width: 2.4rem;
+  transition: background .16s, color .16s, box-shadow .16s, transform .13s;
+}
+.btn-delete-inv:hover {
+  background: var(--red, #d32f2f);
+  color: #fff;
+  border-color: var(--red, #d32f2f);
+  box-shadow: 0 3px 10px rgba(211,47,47,.28);
+  transform: translateY(-1px);
+  text-decoration: none;
+  cursor: pointer;
+}
+/* Row highlight for expired items (admin view) */
+tr.row-expired {
+  background: #fff5f5 !important;
+}
+tr.row-expired:hover {
+  background: #ffebee !important;
+}
+/* Expired count alert */
+.expired-alert-bar {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .7rem 1rem;
+  background: linear-gradient(135deg,#fff5f5 0%,#ffebee 100%);
+  border: 1px solid #ffcdd2;
+  border-left: 4px solid var(--red,#d32f2f);
+  border-radius: var(--radius-lg, 10px);
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.expired-alert-bar .ea-icon { color: var(--red,#d32f2f); font-size: 1.15rem; flex-shrink:0; }
+.expired-alert-bar .ea-body { flex:1; min-width:0; font-size:.9rem; }
+.expired-alert-bar .ea-body strong { color: var(--red,#d32f2f); }
+/* Bulk delete form inline */
+.bulk-delete-form { display:inline; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container">
 
@@ -14,78 +78,111 @@
     {% endif %}
   </div>
 
-  <!-- ── Expiry Alert Banner ── -->
-  {% if expiring_count %}
+  <!-- ── Expiry Alert Banner (admin only, future-only) ── -->
+  {% if user.role == 'admin' and expiring_count %}
     <div class="alert alert-warning" role="alert" aria-live="polite">
       <i class="fas fa-exclamation-triangle"></i>
-      <strong>{{ expiring_count }} item{{ expiring_count|pluralize }}</strong> expiring within 7 days.
+      <strong>{{ expiring_count }} item{{ expiring_count|pluralize }}</strong>
+      expiring within the next 7 days.
       <a href="{% url 'inventory:alerts' %}" style="font-weight:600;margin-left:.5rem;">
         View Alerts <i class="fas fa-arrow-right"></i>
       </a>
     </div>
   {% endif %}
 
+  <!-- ── Expired Blood Alert (admin only) ── -->
+  {% if user.role == 'admin' and expired_count %}
+    <div class="expired-alert-bar" role="alert" aria-live="polite">
+      <span class="ea-icon"><i class="fas fa-ban"></i></span>
+      <div class="ea-body">
+        <strong>{{ expired_count }} expired unit{{ expired_count|pluralize }}</strong>
+        still marked as available &mdash; these should be removed from stock.
+        {% if not expired_filter %}
+          <a href="{% url 'inventory:list' %}?expired=1" style="font-weight:600;margin-left:.4rem;">
+            Show expired only <i class="fas fa-arrow-right"></i>
+          </a>
+        {% endif %}
+      </div>
+      <form method="post" action="{% url 'inventory:delete_expired' %}" class="bulk-delete-form"
+            onsubmit="return confirm('Permanently delete all {{ expired_count }} expired record{{ expired_count|pluralize }}? This cannot be undone.');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-danger" data-tooltip="Permanently remove all expired records">
+          <i class="fas fa-trash-alt"></i> Delete All Expired
+        </button>
+      </form>
+    </div>
+  {% endif %}
+
   <!-- ── Filter Card ── -->
   <div class="card mb-3">
-    <form method="get">
-      <div style="display:flex;align-items:center;gap:.75rem;padding:.65rem 1rem;flex-wrap:wrap;">
-
-        <span style="font-size:.78rem;font-weight:700;color:var(--grey-500);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-right:.25rem;">
-          <i class="fas fa-filter" style="color:var(--red);"></i> Filter
-        </span>
-
-        <div style="display:flex;flex-direction:column;gap:.2rem;">
-          <label style="font-size:.72rem;font-weight:600;color:var(--grey-400);text-transform:uppercase;letter-spacing:.04em;">
-            <i class="fas fa-tint" style="color:var(--red);"></i> Group
+    <div class="card-header">
+      <h3><i class="fas fa-filter"></i> Filter Inventory</h3>
+    </div>
+    <div class="card-body">
+      <form method="get" class="form-row">
+        <div class="form-group">
+          <label for="group">
+            <i class="fas fa-tint" style="color:var(--red);"></i>
+            Blood Group
           </label>
-          <select name="group" class="form-control" style="padding:.35rem .55rem;font-size:.88rem;height:auto;">
-              <option value="">All Groups</option>
-              <option value="A+"  {% if group == 'A+'  %}selected{% endif %}>A+</option>
-              <option value="A-"  {% if group == 'A-'  %}selected{% endif %}>A-</option>
-              <option value="B+"  {% if group == 'B+'  %}selected{% endif %}>B+</option>
-              <option value="B-"  {% if group == 'B-'  %}selected{% endif %}>B-</option>
-              <option value="AB+" {% if group == 'AB+' %}selected{% endif %}>AB+</option>
-              <option value="AB-" {% if group == 'AB-' %}selected{% endif %}>AB-</option>
-              <option value="O+"  {% if group == 'O+'  %}selected{% endif %}>O+</option>
-              <option value="O-"  {% if group == 'O-'  %}selected{% endif %}>O-</option>
-            </select>
-          </div>
-
-        <div style="display:flex;flex-direction:column;gap:.2rem;">
-          <label style="font-size:.72rem;font-weight:600;color:var(--grey-400);text-transform:uppercase;letter-spacing:.04em;">
-            <i class="fas fa-vial" style="color:#0284c7;"></i> Type
+          <select name="group" id="group" style="width:100%;padding:.6rem;border:1.5px solid var(--grey-300);border-radius:var(--radius);">
+            <option value="">All Groups</option>
+            <option value="A+"  {% if group == 'A+'  %}selected{% endif %}>A+</option>
+            <option value="A-"  {% if group == 'A-'  %}selected{% endif %}>A-</option>
+            <option value="B+"  {% if group == 'B+'  %}selected{% endif %}>B+</option>
+            <option value="B-"  {% if group == 'B-'  %}selected{% endif %}>B-</option>
+            <option value="AB+" {% if group == 'AB+' %}selected{% endif %}>AB+</option>
+            <option value="AB-" {% if group == 'AB-' %}selected{% endif %}>AB-</option>
+            <option value="O+"  {% if group == 'O+'  %}selected{% endif %}>O+</option>
+            <option value="O-"  {% if group == 'O-'  %}selected{% endif %}>O-</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="type">
+            <i class="fas fa-vial" style="color:#0284c7;"></i>
+            Blood Type
           </label>
-          <select name="type" class="form-control" style="padding:.35rem .55rem;font-size:.88rem;height:auto;">
-              <option value="">All Types</option>
-              <option value="whole"     {% if type == 'whole'     %}selected{% endif %}>Whole Blood</option>
-              <option value="rbc"       {% if type == 'rbc'       %}selected{% endif %}>RBC</option>
-              <option value="plasma"    {% if type == 'plasma'    %}selected{% endif %}>Plasma</option>
-              <option value="platelets" {% if type == 'platelets' %}selected{% endif %}>Platelets</option>
-            </select>
-          </div>
-
-        <div style="display:flex;flex-direction:column;gap:.2rem;">
-          <label style="font-size:.72rem;font-weight:600;color:var(--grey-400);text-transform:uppercase;letter-spacing:.04em;">
-            <i class="fas fa-check-circle" style="color:#16a34a;"></i> Available
+          <select name="type" id="type" style="width:100%;padding:.6rem;border:1.5px solid var(--grey-300);border-radius:var(--radius);">
+            <option value="">All Types</option>
+            <option value="whole"     {% if type == 'whole'     %}selected{% endif %}>Whole Blood</option>
+            <option value="rbc"       {% if type == 'rbc'       %}selected{% endif %}>RBC</option>
+            <option value="plasma"    {% if type == 'plasma'    %}selected{% endif %}>Plasma</option>
+            <option value="platelets" {% if type == 'platelets' %}selected{% endif %}>Platelets</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="available">
+            <i class="fas fa-check-circle" style="color:#16a34a;"></i>
+            Availability
           </label>
-          <select name="available" class="form-control" style="padding:.35rem .55rem;font-size:.88rem;height:auto;">
-              <option value="">All</option>
-              <option value="1" {% if available == '1' %}selected{% endif %}>Available</option>
-              <option value="0" {% if available == '0' %}selected{% endif %}>Unavailable</option>
-            </select>
-          </div>
-
-        <div style="display:flex;gap:.5rem;align-self:flex-end;">
-          <button type="submit" class="btn btn-primary btn-sm" style="white-space:nowrap;">
-            <i class="fas fa-filter"></i> Apply
+          <select name="available" id="available" style="width:100%;padding:.6rem;border:1.5px solid var(--grey-300);border-radius:var(--radius);">
+            <option value="">All</option>
+            <option value="1" {% if available == '1' %}selected{% endif %}>Available</option>
+            <option value="0" {% if available == '0' %}selected{% endif %}>Unavailable</option>
+          </select>
+        </div>
+        {% if user.role == 'admin' %}
+        <div class="form-group">
+          <label for="expired">
+            <i class="fas fa-ban" style="color:var(--red);"></i>
+            Expiry
+          </label>
+          <select name="expired" id="expired" style="width:100%;padding:.6rem;border:1.5px solid var(--grey-300);border-radius:var(--radius);">
+            <option value="">All</option>
+            <option value="1" {% if expired_filter == '1' %}selected{% endif %}>Expired Only</option>
+          </select>
+        </div>
+        {% endif %}
+        <div class="form-group" style="display:flex;align-items:flex-end;gap:.5rem;">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-filter"></i> Apply Filters
           </button>
-          <a href="{% url 'inventory:list' %}" class="btn btn-outline btn-sm" style="white-space:nowrap;">
+          <a href="{% url 'inventory:list' %}" class="btn btn-outline">
             <i class="fas fa-times"></i> Clear
           </a>
         </div>
-
-      </div>
-    </form>
+      </form>
+    </div>
   </div>
 
   <!-- ── Inventory Table ── -->
@@ -109,12 +206,20 @@
             <th><i class="fas fa-calendar-plus"></i> Collected</th>
             <th><i class="fas fa-calendar-times"></i> Expires</th>
             <th><i class="fas fa-toggle-on"></i> Available</th>
-            {% if user.role == 'admin' %}<th><i class="fas fa-cog"></i> Action</th>{% endif %}
+            {% if user.role == 'admin' %}<th><i class="fas fa-cog"></i> Actions</th>{% endif %}
           </tr>
         </thead>
         <tbody>
           {% for inv in inventory %}
-          <tr>
+          {% if user.role == 'admin' %}
+            {% if inv.expiry_date < today %}
+            <tr class="row-expired">
+            {% else %}
+            <tr>
+            {% endif %}
+          {% else %}
+            <tr>
+          {% endif %}
             <td>
               <span class="badge badge-danger">
                 <i class="fas fa-tint"></i> {{ inv.blood_group }}
@@ -129,10 +234,14 @@
               {{ inv.collection_date|date:"d M Y" }}
             </td>
             <td>
-              {% if inv.is_expired %}
+              {% if user.role == 'admin' and inv.expiry_date < today %}
                 <span class="badge badge-danger">
-                  <i class="fas fa-exclamation-circle"></i> {{ inv.expiry_date|date:"d M Y" }} (Expired)
+                  <i class="fas fa-ban"></i> {{ inv.expiry_date|date:"d M Y" }} &mdash; Expired
                 </span>
+              {% elif inv.expiry_date < today %}
+                {# Hospital users see standard date, no expired label #}
+                <i class="fas fa-calendar-times" style="color:var(--grey-400);margin-right:.3rem;"></i>
+                {{ inv.expiry_date|date:"d M Y" }}
               {% else %}
                 <i class="fas fa-calendar-times" style="color:var(--grey-400);margin-right:.3rem;"></i>
                 {{ inv.expiry_date|date:"d M Y" }}
@@ -147,9 +256,18 @@
             </td>
             {% if user.role == 'admin' %}
             <td>
-              <a href="{% url 'inventory:update' inv.pk %}" class="btn btn-sm btn-outline" data-tooltip="Edit record">
-                <i class="fas fa-edit"></i> Edit
-              </a>
+              <div class="btn-group">
+                <a href="{% url 'inventory:update' inv.pk %}" class="btn btn-sm btn-outline btn-edit-inv" data-tooltip="Edit record">
+                  <i class="fas fa-edit"></i> Edit
+                </a>
+                <form method="post" action="{% url 'inventory:delete' inv.pk %}" style="display:inline;line-height:0;"
+                      onsubmit="return confirm('Delete this record? This cannot be undone.');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-delete-inv" data-tooltip="Delete record">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </form>
+              </div>
             </td>
             {% endif %}
           </tr>

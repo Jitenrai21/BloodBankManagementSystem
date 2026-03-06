@@ -156,8 +156,14 @@ def _admin_context(request):
     ).order_by("date", "time")[:5]
     total_slots        = DonationSlot.objects.count()
     pending_donations  = DonationHistory.objects.filter(status="pending").count()
-    approved_donations = DonationHistory.objects.filter(status="approved").count()
-
+    approved_donations = DonationHistory.objects.filter(status="approved").count()    # Pending slot bookings: new bookings awaiting admin review
+    pending_slot_bookings_qs = (
+        DonationHistory.objects
+        .filter(status="pending")
+        .select_related("donor", "donor__user", "slot")
+        .order_by("-created_at")[:5]
+    )
+    pending_slot_bookings_count = DonationHistory.objects.filter(status="pending").count()
     # ── Fraud ─────────────────────────────────────────────────────────────────
     active_fraud_flags = FraudLog.objects.filter(is_resolved=False).count()
     fraud_by_severity  = {
@@ -200,6 +206,8 @@ def _admin_context(request):
         "approved_donations":   approved_donations,
         "pending_slots":        pending_donations,
         "approved_slots":       approved_donations,
+        "pending_slot_bookings_count": pending_slot_bookings_count,
+        "pending_slot_bookings_qs":    pending_slot_bookings_qs,
         # fraud
         "active_fraud_flags":   active_fraud_flags,
         "fraud_by_severity":    fraud_by_severity,

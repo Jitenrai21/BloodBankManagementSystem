@@ -13,11 +13,40 @@ from .forms import DonationSlotForm
 
 @login_required
 def slot_list(request):
-    slots = DonationSlot.objects.all().order_by("date", "time")
+    from django.utils import timezone
+    import datetime
+    now = timezone.now()
+
+    # Auto-expire past slots: bulk-update is_active=False for passed date/times
+    past_slots = DonationSlot.objects.filter(is_active=True, date__lt=now.date())
+    past_slots.update(is_active=False)
+    # Also expire slots that are today but time has passed
+    today_past = DonationSlot.objects.filter(
+        is_active=True,
+        date=now.date(),
+        time__lt=now.time()
+    )
+    today_past.update(is_active=False)
+
     is_admin = request.user.role == "admin"
+
+    if is_admin:
+        slots = DonationSlot.objects.all().order_by("-date", "-time")
+    else:
+        # Donors only see active, non-full, future or today slots
+        slots = DonationSlot.objects.filter(
+            is_active=True
+        ).order_by("date", "time")
+        # Exclude full slots for donors
+        slots = [s for s in slots if not s.is_full()]
+
+    # Pending bookings count for admin context
+    pending_bookings_count = DonationHistory.objects.filter(status="pending").count() if is_admin else 0
+
     return render(request, "donations/slot_list.html", {
         "slots": slots,
         "is_admin": is_admin,
+        "pending_bookings_count": pending_bookings_count,
     })
 
 
