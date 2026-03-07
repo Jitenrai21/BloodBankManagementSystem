@@ -31,6 +31,34 @@ def fraud_log_list(request):
 
 @login_required
 @admin_required
+def run_ml_analysis(request):
+    """Admin-triggered ML anomaly detection run."""
+    from audit.models import AuditLog
+    from .ml import run_full_analysis
+    if request.method != "POST":
+        return redirect("fraud:list")
+    try:
+        logs = run_full_analysis(triggered_by=request.user)
+        count = len(logs)
+        if count:
+            messages.warning(
+                request,
+                f"ML analysis complete. {count} anomalous donor"
+                f"{'s' if count != 1 else ''} flagged or updated.",
+            )
+        else:
+            messages.success(request, "ML analysis complete. No anomalies detected.")
+        AuditLog.log(
+            request.user, "ml_analysis_run", "FraudLog", None,
+            f"Isolation Forest run — {count} flag(s) created/updated", request,
+        )
+    except Exception as exc:
+        messages.error(request, f"ML analysis failed: {exc}")
+    return redirect("fraud:list")
+
+
+@login_required
+@admin_required
 def resolve_flag(request, pk):
     from audit.models import AuditLog
     flag = get_object_or_404(FraudLog, pk=pk)

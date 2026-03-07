@@ -126,6 +126,22 @@ def book_slot(request, slot_id):
             units_donated=1,
             status="pending",
         )
+
+    # ── ML anomaly check ────────────────────────────────────────────────────
+    try:
+        from fraud.ml import score_and_flag_donor
+        fraud_log = score_and_flag_donor(donor)
+        if fraud_log and fraud_log.severity == "high":
+            messages.warning(
+                request,
+                "Your booking was recorded but our system flagged unusual activity "
+                "on your account. An admin will review it."
+            )
+        elif fraud_log and fraud_log.severity in ("medium", "low"):
+            pass  # Logged silently; no need to alarm donor
+    except Exception:
+        pass  # Never let ML errors block a legitimate booking
+
     messages.success(request, f"Slot booked on {slot.date} at {slot.time}. Awaiting admin approval.")
     return redirect("donations:slot_list")
 
